@@ -186,7 +186,7 @@ public class ReportPromptAnswerer {
         List<PromptAnswer> answers = new ArrayList<>();
         switch (prompt.getType().toUpperCase()) {
             case "ELEMENTS": {
-                answers.add(((ElementPromptInfo) promptInfo).getElements().get(2));
+                answers.add(((ElementPromptInfo) promptInfo).getElements().get(0));
                 break;
             }
             default: {

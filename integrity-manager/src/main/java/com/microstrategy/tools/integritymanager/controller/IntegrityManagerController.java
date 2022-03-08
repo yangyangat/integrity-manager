@@ -1,5 +1,6 @@
 package com.microstrategy.tools.integritymanager.controller;
 
+import com.microstrategy.tools.integritymanager.model.appobject.ExecutionPair;
 import com.microstrategy.tools.integritymanager.model.appobject.ValidationTask;
 import com.microstrategy.tools.integritymanager.model.bizobject.MSTRAuthToken;
 import com.microstrategy.tools.integritymanager.service.intf.*;
@@ -8,8 +9,6 @@ import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.stereotype.Controller;
 import org.springframework.web.bind.annotation.*;
-import org.springframework.data.util.Pair;
-
 
 import java.time.LocalDateTime;
 import java.util.ArrayList;
@@ -49,34 +48,47 @@ public class IntegrityManagerController {
     @ResponseBody
     public ResponseEntity compare(@RequestParam Optional<Integer> count) {
         int countInt = count.orElse(0);
-        if (countInt <= 0) {
-            return new ResponseEntity("count parameter is expected to be larger than zero", HttpStatus.BAD_REQUEST);
+        if (countInt <= 0 && countInt != -1) {
+            return new ResponseEntity("Count parameter is expected to be larger than zero", HttpStatus.BAD_REQUEST);
         }
 
-        String libraryUrl = "http://10.23.34.25:8080/MicroStrategyLibrary";
-        MSTRAuthToken token = loginService.login(libraryUrl, "administrator", "");
-        String projectId = "B19DEDCC11D4E0EFC000EB9495D0F44F";
-        ExecutorService executionExecutors = Executors.newFixedThreadPool(5);
+        final int sessionCount = 5;
+        String sourceLibraryUrl = "http://10.23.34.25:8080/MicroStrategyLibrary";
+        //MSTRAuthToken sourceToken = loginService.login(sourceLibraryUrl, "administrator", "");
+        List<MSTRAuthToken> sourceTokenList = loginService.login(sourceLibraryUrl, "administrator", "", sessionCount);
+        String sourceProjectId = "B19DEDCC11D4E0EFC000EB9495D0F44F";
+        ExecutorService sourceExecutionExecutors = Executors.newFixedThreadPool(5);
 
-        List<Pair<String, String>> objectPairs = new ArrayList<Pair<String, String>>();
+        String targetLibraryUrl = "http://10.23.34.25:8080/MicroStrategyLibrary";
+        //MSTRAuthToken targetToken = loginService.login(targetLibraryUrl, "administrator", "");
+        List<MSTRAuthToken> targetTokenList = loginService.login(targetLibraryUrl, "administrator", "", sessionCount);
+        String targetProjectId = "B19DEDCC11D4E0EFC000EB9495D0F44F";
+        ExecutorService targetExecutionExecutors = Executors.newFixedThreadPool(5);
 
-        List<String> sourceObjectIds = searchService.getTopNReportIds(libraryUrl, token, projectId, countInt);
+        if (sourceTokenList.isEmpty() || targetTokenList.isEmpty()) {
+            return new ResponseEntity("Failed to login the library server", HttpStatus.UNAUTHORIZED);
+        }
+
+        List<ExecutionPair> pairList = new ArrayList<>();
+
+        List<String> sourceObjectIds = searchService.getTopNReportIds(sourceLibraryUrl, sourceTokenList.get(0), sourceProjectId, countInt);
         List<String> targetObjectIds = new ArrayList<>(sourceObjectIds);
 
         countInt = Math.min(sourceObjectIds.size(), targetObjectIds.size());
 
         for (int i = 0; i < countInt; i++) {
-            objectPairs.add(Pair.of(sourceObjectIds.get(i), targetObjectIds.get(i)));
+            pairList.add(new ExecutionPair(sourceObjectIds.get(i), 0, sourceTokenList.get(i % sourceTokenList.size()),
+                    targetObjectIds.get(i), 0, targetTokenList.get(i % targetTokenList.size())));
         }
 
         String jobId = jobManager.newJob();
 
-        List<CompletableFuture<Object>> comparisonFutures = objectPairs.stream()
-                .map(objectPair -> {
-                    CompletableFuture<String> sourceObjectExecution = executionService.executeAsync(libraryUrl, token, projectId, objectPair.getFirst(),
-                            0, null, executionExecutors);
-                    CompletableFuture<String> targetObjectExecution = executionService.executeAsync(libraryUrl, token, projectId, objectPair.getSecond(),
-                            0, null, executionExecutors);
+        List<CompletableFuture<Object>> comparisonFutures = pairList.stream()
+                .map(executionPair -> {
+                    CompletableFuture<String> sourceObjectExecution = executionService.executeAsync(sourceLibraryUrl, executionPair.getSourceToken(), sourceProjectId,
+                            executionPair.getSourceObjectId(), executionPair.getSourceObjectType(),null, sourceExecutionExecutors);
+                    CompletableFuture<String> targetObjectExecution = executionService.executeAsync(targetLibraryUrl, executionPair.getTargetToken(), targetProjectId,
+                            executionPair.getTargetObjectId(), executionPair.getTargetObjectType(),null, targetExecutionExecutors);
                     CompletableFuture<Object> comparison = sourceObjectExecution.thenCombineAsync(targetObjectExecution, (source, target) -> {
                         return comparisonService.compareResult(source, target);
                     }).whenComplete((u, v) -> {
@@ -85,8 +97,8 @@ public class IntegrityManagerController {
                         }
                     });
 
-                    ValidationTask task = new ValidationTask(objectPair.getFirst(),
-                            objectPair.getSecond(),
+                    ValidationTask task = new ValidationTask(executionPair.getSourceObjectId(),
+                            executionPair.getTargetObjectId(),
                             sourceObjectExecution,
                             targetObjectExecution,
                             comparison);

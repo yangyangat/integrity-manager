@@ -6,6 +6,7 @@ import org.springframework.http.*;
 import org.springframework.stereotype.Service;
 import org.springframework.web.client.RestTemplate;
 
+import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
 
@@ -32,5 +33,17 @@ public class LoginServiceImpl implements LoginService {
         }
 
         return null;
+    }
+
+    @Override
+    public List<MSTRAuthToken> login(String libraryUrl, String username, String password, int count) {
+        List<MSTRAuthToken> tokenList = new ArrayList<>();
+        for (int i = 0; i < count; i++) {
+            MSTRAuthToken token = this.login(libraryUrl, username, password);
+            if (token != null) {
+                tokenList.add(token);
+            }
+        }
+        return tokenList;
     }
 }
