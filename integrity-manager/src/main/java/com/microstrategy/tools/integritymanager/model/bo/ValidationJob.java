@@ -1,4 +1,4 @@
-package com.microstrategy.tools.integritymanager.model.appobject;
+package com.microstrategy.tools.integritymanager.model.bo;
 
 import lombok.Getter;
 import lombok.Setter;
@@ -10,9 +10,9 @@ import java.util.concurrent.CompletableFuture;
 import java.util.stream.Collectors;
 
 public class ValidationJob {
-    @Getter
-    @Setter
-    private String libraryUrl;
+    //@Getter
+    //@Setter
+    //private String libraryUrl;
 
     private final ArrayList<ValidationTask> tasks;
 
@@ -53,5 +53,9 @@ public class ValidationJob {
                 "target", task.getTargetObjectId() + "'s status is: " + targetExecutionStatus,
                 "comparison", "The comparison execution is " + comparisonStatus
         );
+    }
+
+    public List<ValidationResult> getValidationResultSet() {
+        return tasks.stream().map(task -> task.getValidationResult()).collect(Collectors.toList());
     }
 }

@@ -1,6 +1,6 @@
 package com.microstrategy.tools.integritymanager.service.intf;
 
-import com.microstrategy.tools.integritymanager.model.bizobject.MSTRAuthToken;
+import com.microstrategy.tools.integritymanager.model.entity.mstr.MSTRAuthToken;
 
 import java.util.List;
 

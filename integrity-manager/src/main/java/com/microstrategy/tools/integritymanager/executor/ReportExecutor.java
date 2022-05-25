@@ -2,7 +2,7 @@ package com.microstrategy.tools.integritymanager.executor;
 
 import com.microstrategy.tools.integritymanager.exception.ReportExecutionException;
 import com.microstrategy.tools.integritymanager.exception.ReportExecutorInternalException;
-import com.microstrategy.tools.integritymanager.model.bizobject.report.ReportInstanceStatus;
+import com.microstrategy.tools.integritymanager.model.entity.mstr.report.ReportInstanceStatus;
 import org.apache.http.client.methods.CloseableHttpResponse;
 import org.apache.http.client.methods.HttpPost;
 import org.apache.http.entity.ByteArrayEntity;

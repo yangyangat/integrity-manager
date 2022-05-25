@@ -1,4 +1,4 @@
-package com.microstrategy.tools.integritymanager.model.bizobject.prompt;
+package com.microstrategy.tools.integritymanager.model.entity.mstr.prompt;
 
 public class PromptElementAnswer extends PromptAnswer {
     private String id;

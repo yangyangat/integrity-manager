@@ -1,7 +1,6 @@
-package com.microstrategy.tools.integritymanager.model.bizobject.prompt;
+package com.microstrategy.tools.integritymanager.model.entity.mstr.prompt;
 
 import java.util.List;
-
 
 public class AnswerPromptData {
     private String key;
