@@ -1,4 +1,4 @@
-package com.microstrategy.tools.integritymanager.model.bizobject.report;
+package com.microstrategy.tools.integritymanager.model.entity.mstr.report;
 
 public class ReportInstanceStatus {
 

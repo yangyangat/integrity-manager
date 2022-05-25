@@ -1,6 +1,6 @@
 package com.microstrategy.tools.integritymanager.service.impl;
 
-import com.microstrategy.tools.integritymanager.model.bizobject.MSTRAuthToken;
+import com.microstrategy.tools.integritymanager.model.entity.mstr.MSTRAuthToken;
 import com.microstrategy.tools.integritymanager.service.intf.LoginService;
 import org.springframework.http.*;
 import org.springframework.stereotype.Service;

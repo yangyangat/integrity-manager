@@ -1,7 +1,8 @@
 package com.microstrategy.tools.integritymanager.service.impl;
 
-import com.microstrategy.tools.integritymanager.model.appobject.ValidationJob;
-import com.microstrategy.tools.integritymanager.model.appobject.ValidationTask;
+import com.microstrategy.tools.integritymanager.model.bo.ValidationJob;
+import com.microstrategy.tools.integritymanager.model.bo.ValidationResult;
+import com.microstrategy.tools.integritymanager.model.bo.ValidationTask;
 import com.microstrategy.tools.integritymanager.service.intf.JobManager;
 import org.springframework.stereotype.Service;
 
@@ -33,6 +34,12 @@ public class JobManagerImpl implements JobManager {
         if (job != null) {
             job.addTask(task);
         }
+    }
+
+    @Override
+    public List<ValidationResult> getValidationResultSet(String jobId) {
+        ValidationJob job = this.getJob(jobId);
+        return job.getValidationResultSet();
     }
 
     public void putJob(String jobId, ValidationJob theJob) {

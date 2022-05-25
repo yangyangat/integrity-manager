@@ -4,7 +4,7 @@ import com.google.gson.Gson;
 import com.google.gson.JsonSyntaxException;
 import com.google.gson.reflect.TypeToken;
 import com.microstrategy.tools.integritymanager.exception.AnswerPromptException;
-import com.microstrategy.tools.integritymanager.model.bizobject.prompt.*;
+import com.microstrategy.tools.integritymanager.model.entity.mstr.prompt.*;
 import com.microstrategy.tools.integritymanager.util.UrlHelper;
 import org.apache.http.Header;
 import org.apache.http.client.methods.CloseableHttpResponse;

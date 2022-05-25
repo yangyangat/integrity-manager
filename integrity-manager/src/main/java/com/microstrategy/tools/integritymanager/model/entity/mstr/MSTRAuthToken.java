@@ -1,4 +1,4 @@
-package com.microstrategy.tools.integritymanager.model.bizobject;
+package com.microstrategy.tools.integritymanager.model.entity.mstr;
 
 import lombok.Data;
 

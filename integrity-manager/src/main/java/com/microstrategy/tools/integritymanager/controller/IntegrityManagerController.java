@@ -1,8 +1,8 @@
 package com.microstrategy.tools.integritymanager.controller;
 
-import com.microstrategy.tools.integritymanager.model.appobject.ExecutionPair;
-import com.microstrategy.tools.integritymanager.model.appobject.ValidationTask;
-import com.microstrategy.tools.integritymanager.model.bizobject.MSTRAuthToken;
+import com.microstrategy.tools.integritymanager.model.bo.*;
+import com.microstrategy.tools.integritymanager.model.entity.mstr.MSTRAuthToken;
+import com.microstrategy.tools.integritymanager.model.entity.mstr.ObjectInfo;
 import com.microstrategy.tools.integritymanager.service.intf.*;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.HttpStatus;
@@ -10,11 +10,9 @@ import org.springframework.http.ResponseEntity;
 import org.springframework.stereotype.Controller;
 import org.springframework.web.bind.annotation.*;
 
+import java.io.IOException;
 import java.time.LocalDateTime;
-import java.util.ArrayList;
-import java.util.List;
-import java.util.Map;
-import java.util.Optional;
+import java.util.*;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
@@ -37,6 +35,9 @@ public class IntegrityManagerController {
     @Autowired
     private ComparisonService comparisonService;
 
+    @Autowired
+    private BaselineService baselineService;
+
     @GetMapping(value = "/jobs/{jobId}")
     @ResponseBody
     public ResponseEntity query(@PathVariable String jobId) {
@@ -52,6 +53,7 @@ public class IntegrityManagerController {
             return new ResponseEntity("Count parameter is expected to be larger than zero", HttpStatus.BAD_REQUEST);
         }
 
+        //TODO, read the value from config
         final int sessionCount = 5;
         String sourceLibraryUrl = "http://10.23.34.25:8080/MicroStrategyLibrary";
         //MSTRAuthToken sourceToken = loginService.login(sourceLibraryUrl, "administrator", "");
@@ -72,36 +74,113 @@ public class IntegrityManagerController {
         List<ExecutionPair> pairList = new ArrayList<>();
 
         List<String> sourceObjectIds = searchService.getTopNReportIds(sourceLibraryUrl, sourceTokenList.get(0), sourceProjectId, countInt);
+        //sourceObjectIds = Arrays.asList("13CFD83A458A68655A13CBA8D7C62CD5");
+
         List<String> targetObjectIds = new ArrayList<>(sourceObjectIds);
 
         countInt = Math.min(sourceObjectIds.size(), targetObjectIds.size());
 
         for (int i = 0; i < countInt; i++) {
-            pairList.add(new ExecutionPair(sourceObjectIds.get(i), 0, sourceTokenList.get(i % sourceTokenList.size()),
-                    targetObjectIds.get(i), 0, targetTokenList.get(i % targetTokenList.size())));
+            pairList.add(new ExecutionPair(sourceObjectIds.get(i), 3, sourceTokenList.get(i % sourceTokenList.size()),
+                    targetObjectIds.get(i), 3, targetTokenList.get(i % targetTokenList.size())));
         }
 
         String jobId = jobManager.newJob();
+        ValidataionInfo validationInfo = new ValidataionInfo()
+                                        .setJobId(jobId)
+                                        .setSourceLibraryUrl(sourceLibraryUrl)
+                                        .setSourceObjectIds(sourceObjectIds)
+                                        .setTargetLibraryUrl(targetLibraryUrl)
+                                        .setTargetObjectIds(targetObjectIds);
+
+        //Init the result baseline
+        try {
+            baselineService.initBaseline(validationInfo);
+        }
+        // TODO, will use @RestControllerAdvice to handle all the execptions.
+        catch (IOException e) {
+            return new ResponseEntity("Server internal error!", HttpStatus.INTERNAL_SERVER_ERROR);
+        }
 
         List<CompletableFuture<Object>> comparisonFutures = pairList.stream()
                 .map(executionPair -> {
+                    ValidationResult validationResult = new ValidationResult();
+                    ReportExecutionResult sourceReportExecutionResult = new ReportExecutionResult();
+                    ReportExecutionResult targetReportExecutionResult = new ReportExecutionResult();
+
                     CompletableFuture<String> sourceObjectExecution = executionService.executeAsync(sourceLibraryUrl, executionPair.getSourceToken(), sourceProjectId,
-                            executionPair.getSourceObjectId(), executionPair.getSourceObjectType(),null, sourceExecutionExecutors);
+                            executionPair.getSourceObjectId(), executionPair.getSourceObjectType(),null, sourceExecutionExecutors)
+                            .whenCompleteAsync((result, error) -> {
+                                if (error == null) {
+                                    try {
+                                        baselineService.updateSourceBaseline(jobId, executionPair.getTargetObjectId(), result);
+                                        sourceReportExecutionResult.setReport(result);
+                                        //validationResult.setSourceExecutionResult(ReportExecutionResult.build().setReport(result));
+                                    } catch (IOException e) {
+                                        e.printStackTrace();
+                                    }
+                                }
+                            });
+
+                    CompletableFuture<ObjectInfo> sourceObjectInfoExecution = executionService.executeObjectInfoAsync(sourceLibraryUrl, executionPair.getSourceToken(), sourceProjectId,
+                            executionPair.getSourceObjectId(), executionPair.getSourceObjectType(),null, sourceExecutionExecutors)
+                            .whenCompleteAsync((objectInfo, error) -> {
+                                if (error == null) {
+                                    sourceReportExecutionResult.setObjectInfo(objectInfo);
+                                }
+                            });
+
+                    CompletableFuture<ReportExecutionResult> sourceObjectWithObjectInfo = sourceObjectExecution.thenCombineAsync(sourceObjectInfoExecution, (u, v) -> {
+                        validationResult.setSourceExecutionResult(sourceReportExecutionResult);
+                        return sourceReportExecutionResult;
+                    });
+
                     CompletableFuture<String> targetObjectExecution = executionService.executeAsync(targetLibraryUrl, executionPair.getTargetToken(), targetProjectId,
-                            executionPair.getTargetObjectId(), executionPair.getTargetObjectType(),null, targetExecutionExecutors);
-                    CompletableFuture<Object> comparison = sourceObjectExecution.thenCombineAsync(targetObjectExecution, (source, target) -> {
-                        return comparisonService.compareResult(source, target);
-                    }).whenComplete((u, v) -> {
-                        if (v == null) {
-                            comparisonService.printDifferent(u);
+                            executionPair.getTargetObjectId(), executionPair.getTargetObjectType(),null, targetExecutionExecutors)
+                            .whenCompleteAsync((result, error) -> {
+                                if (error == null) {
+                                    try {
+                                        baselineService.updateTargetBaseline(jobId, executionPair.getTargetObjectId(), result);
+                                        targetReportExecutionResult.setReport(result);
+                                        //validationResult.setTargetExecutionResult(ReportExecutionResult.build().setReport(result));
+                                    } catch (IOException e) {
+                                        e.printStackTrace();
+                                    }
+                                }
+                            });
+
+                    CompletableFuture<ObjectInfo> targetObjectInfoExecution = executionService.executeObjectInfoAsync(targetLibraryUrl, executionPair.getTargetToken(), targetProjectId,
+                                    executionPair.getTargetObjectId(), executionPair.getTargetObjectType(),null, targetExecutionExecutors)
+                            .whenCompleteAsync((objectInfo, error) -> {
+                                if (error == null) {
+                                    targetReportExecutionResult.setObjectInfo(objectInfo);
+                                }
+                            });
+
+                    CompletableFuture<ReportExecutionResult> targetObjectWithObjectInfo = targetObjectExecution.thenCombineAsync(targetObjectInfoExecution, (u, v) -> {
+                        validationResult.setTargetExecutionResult(targetReportExecutionResult);
+                        return targetReportExecutionResult;
+                    });
+
+                    CompletableFuture<Object> comparison = sourceObjectWithObjectInfo.thenCombineAsync(targetObjectWithObjectInfo, (source, target) -> {
+                        return comparisonService.compareResult(source.getReport(), target.getReport());
+                    }).whenComplete((comparisonResult, error) -> {
+                        if (error == null) {
+                            comparisonService.printDifferent(comparisonResult);
+
+                            //TODO, update result model and persist baseline
+                            baselineService.updateComparison(jobId, sourceProjectId, executionPair.getSourceObjectId(), comparisonResult);
+                            validationResult.setComparisonResult(new ComparisonResult());
                         }
                     });
 
-                    ValidationTask task = new ValidationTask(executionPair.getSourceObjectId(),
-                            executionPair.getTargetObjectId(),
-                            sourceObjectExecution,
-                            targetObjectExecution,
-                            comparison);
+                    ValidationTask task = new ValidationTask()
+                                    .setSourceObjectId(executionPair.getSourceObjectId())
+                                    .setTargetObjectId(executionPair.getTargetObjectId())
+                                    .setSourceObjectExecution(sourceObjectExecution)
+                                    .setTargetObjectExecution(targetObjectExecution)
+                                    .setComparison(comparison)
+                                    .setValidationResult(validationResult);
                     jobManager.addTask(jobId, task);
                     return comparison;
                 })
@@ -119,6 +198,12 @@ public class IntegrityManagerController {
             else {
                 System.out.println("All comparisons done with the following error:\n" + e);
                 System.out.println("Finished at: " + LocalDateTime.now());
+            }
+            List<ValidationResult> validationResultSet = jobManager.getValidationResultSet(jobId);
+            try {
+                baselineService.updateValidationSummary(jobId, validationResultSet);
+            } catch (IOException ex) {
+
             }
         });
 
