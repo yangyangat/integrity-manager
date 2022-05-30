@@ -2,6 +2,7 @@ package com.microstrategy.tools.integritymanager.mapper;
 
 import com.microstrategy.tools.integritymanager.model.bo.ValidataionInfo;
 import com.microstrategy.tools.integritymanager.model.bo.ValidationResult;
+import com.microstrategy.tools.integritymanager.model.entity.filesystem.data.DataDiffHolderJson;
 import com.microstrategy.tools.integritymanager.model.entity.filesystem.summary.SummaryJson;
 import com.microstrategy.tools.integritymanager.util.FileUtil;
 import lombok.Data;
@@ -117,6 +118,17 @@ public class BaselineFileMapper {
         SummaryJson summaryInJson = SummaryJson.build(validationResultSet);
         BaselineInfoFileSystem baselineInfo = mapOfBaselineInfos.get(jobId);
         FileUtil.jsonObjectToFile(summaryInJson, baselineInfo.getSummaryFile());
+    }
+
+    public void updateDataDiff(String jobId, String objId, List<List<Object>> sourceData, List<List<Object>> targetData, boolean [][] diff) throws IOException {
+        BaselineInfoFileSystem baselineInfo = mapOfBaselineInfos.get(jobId);
+        String diffPath = baselineInfo.mapOfObjectsDiffPath.get(objId);
+        String dataDiffFile = Paths.get(diffPath, "data_diff.json").toAbsolutePath().toString();
+
+        DataDiffHolderJson dataDiffHolderJson = DataDiffHolderJson.build("");
+        dataDiffHolderJson.populateBase(sourceData, diff);
+        dataDiffHolderJson.populateTarget(targetData, diff);
+        FileUtil.jsonObjectToFile(dataDiffHolderJson, dataDiffFile);
     }
 
     private String getBaselineDirectory() {
