@@ -74,7 +74,7 @@ public class IntegrityManagerController {
         List<ExecutionPair> pairList = new ArrayList<>();
 
         List<String> sourceObjectIds = searchService.getTopNReportIds(sourceLibraryUrl, sourceTokenList.get(0), sourceProjectId, countInt);
-        //sourceObjectIds = Arrays.asList("13CFD83A458A68655A13CBA8D7C62CD5");
+        sourceObjectIds = Arrays.asList("13CFD83A458A68655A13CBA8D7C62CD5");
 
         List<String> targetObjectIds = new ArrayList<>(sourceObjectIds);
 
@@ -169,7 +169,12 @@ public class IntegrityManagerController {
                             comparisonService.printDifferent(comparisonResult);
 
                             //TODO, update result model and persist baseline
-                            baselineService.updateComparison(jobId, sourceProjectId, executionPair.getSourceObjectId(), comparisonResult);
+                            try {
+                                baselineService.updateComparison(jobId, sourceProjectId, executionPair.getSourceObjectId(), comparisonResult,
+                                        sourceObjectWithObjectInfo.getNow(null), targetObjectWithObjectInfo.getNow(null));
+                            } catch (IOException e) {
+                                e.printStackTrace();
+                            }
                             validationResult.setComparisonResult(new ComparisonResult());
                         }
                     });

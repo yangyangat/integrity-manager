@@ -1,5 +1,6 @@
 package com.microstrategy.tools.integritymanager.service.intf;
 
+import com.microstrategy.tools.integritymanager.model.bo.ReportExecutionResult;
 import com.microstrategy.tools.integritymanager.model.bo.ValidataionInfo;
 import com.microstrategy.tools.integritymanager.model.bo.ValidationResult;
 
@@ -19,4 +20,6 @@ public interface BaselineService {
     void updateTargetBaseline(String jobId, String objectId, String result) throws IOException;
 
     void updateValidationSummary(String jobId, List<ValidationResult> validationResultSet) throws IOException ;
+
+    void updateComparison(String jobId, String projectId, String objectId, Object comparisonResult, ReportExecutionResult source, ReportExecutionResult target) throws IOException;
 }
