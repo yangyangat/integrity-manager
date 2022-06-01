@@ -1,6 +1,8 @@
 package com.microstrategy.tools.integritymanager.controller;
 
+import com.microstrategy.tools.integritymanager.constant.enums.EnumComparisonStatus;
 import com.microstrategy.tools.integritymanager.model.bo.*;
+import com.microstrategy.tools.integritymanager.model.entity.filesystem.upgradeimpacts.UpgradeImpactsHolderJson;
 import com.microstrategy.tools.integritymanager.model.entity.mstr.MSTRAuthToken;
 import com.microstrategy.tools.integritymanager.model.entity.mstr.ObjectInfo;
 import com.microstrategy.tools.integritymanager.service.intf.*;
@@ -74,15 +76,24 @@ public class IntegrityManagerController {
         List<ExecutionPair> pairList = new ArrayList<>();
 
         List<String> sourceObjectIds = searchService.getTopNReportIds(sourceLibraryUrl, sourceTokenList.get(0), sourceProjectId, countInt);
-        sourceObjectIds = Arrays.asList("13CFD83A458A68655A13CBA8D7C62CD5");
+        //sourceObjectIds = Arrays.asList("13CFD83A458A68655A13CBA8D7C62CD5");
+        //sourceObjectIds = Arrays.asList("0A9EBE87468B751C3663818889B10D73");
 
         List<String> targetObjectIds = new ArrayList<>(sourceObjectIds);
 
         countInt = Math.min(sourceObjectIds.size(), targetObjectIds.size());
 
         for (int i = 0; i < countInt; i++) {
-            pairList.add(new ExecutionPair(sourceObjectIds.get(i), 3, sourceTokenList.get(i % sourceTokenList.size()),
-                    targetObjectIds.get(i), 3, targetTokenList.get(i % targetTokenList.size())));
+            ExecutionPair executionPair = new ExecutionPair()
+                                        .setSourceObjectId(sourceObjectIds.get(i))
+                                        .setSourceObjectType(3)
+                                        .setSourceToken(sourceTokenList.get(i % sourceTokenList.size()))
+                                        .setTargetObjectId(targetObjectIds.get(i))
+                                        .setTargetObjectType(3)
+                                        .setTargetToken(targetTokenList.get(i % targetTokenList.size()))
+                                        .setExecutionId(i + 1);
+
+            pairList.add(executionPair);
         }
 
         String jobId = jobManager.newJob();
@@ -106,7 +117,9 @@ public class IntegrityManagerController {
                 .map(executionPair -> {
                     ValidationResult validationResult = new ValidationResult();
                     ReportExecutionResult sourceReportExecutionResult = new ReportExecutionResult();
+                    sourceReportExecutionResult.setExecID(executionPair.getExecutionId());
                     ReportExecutionResult targetReportExecutionResult = new ReportExecutionResult();
+                    targetReportExecutionResult.setExecID(executionPair.getExecutionId());
 
                     CompletableFuture<String> sourceObjectExecution = executionService.executeAsync(sourceLibraryUrl, executionPair.getSourceToken(), sourceProjectId,
                             executionPair.getSourceObjectId(), executionPair.getSourceObjectType(),null, sourceExecutionExecutors)
@@ -131,8 +144,10 @@ public class IntegrityManagerController {
                             });
 
                     CompletableFuture<ReportExecutionResult> sourceObjectWithObjectInfo = sourceObjectExecution.thenCombineAsync(sourceObjectInfoExecution, (u, v) -> {
-                        validationResult.setSourceExecutionResult(sourceReportExecutionResult);
+//                        validationResult.setSourceExecutionResult(sourceReportExecutionResult);
                         return sourceReportExecutionResult;
+                    }).whenComplete((executionResult, error) -> {
+                        validationResult.setSourceExecutionResult(sourceReportExecutionResult);
                     });
 
                     CompletableFuture<String> targetObjectExecution = executionService.executeAsync(targetLibraryUrl, executionPair.getTargetToken(), targetProjectId,
@@ -158,8 +173,9 @@ public class IntegrityManagerController {
                             });
 
                     CompletableFuture<ReportExecutionResult> targetObjectWithObjectInfo = targetObjectExecution.thenCombineAsync(targetObjectInfoExecution, (u, v) -> {
-                        validationResult.setTargetExecutionResult(targetReportExecutionResult);
                         return targetReportExecutionResult;
+                    }).whenComplete((executionResult, error) -> {
+                        validationResult.setTargetExecutionResult(targetReportExecutionResult);
                     });
 
                     CompletableFuture<Object> comparison = sourceObjectWithObjectInfo.thenCombineAsync(targetObjectWithObjectInfo, (source, target) -> {
@@ -176,6 +192,11 @@ public class IntegrityManagerController {
                                 e.printStackTrace();
                             }
                             validationResult.setComparisonResult(new ComparisonResult());
+                        }
+                        else {
+                            validationResult.setDataComparisonStatus(EnumComparisonStatus.ERROR);
+                            validationResult.setSQLComparisonStatus(EnumComparisonStatus.ERROR);
+                            validationResult.setDataComparisonStatusForNewSummary(EnumComparisonStatus.ERROR);
                         }
                     });
 
@@ -205,8 +226,12 @@ public class IntegrityManagerController {
                 System.out.println("Finished at: " + LocalDateTime.now());
             }
             List<ValidationResult> validationResultSet = jobManager.getValidationResultSet(jobId);
+
+            //TODO, generate upgrade impacts
+            UpgradeImpactsHolderJson upgradeImpacts = new UpgradeImpactsHolderJson();
             try {
                 baselineService.updateValidationSummary(jobId, validationResultSet);
+                baselineService.updateUpgradeImpacts(jobId, upgradeImpacts);
             } catch (IOException ex) {
 
             }

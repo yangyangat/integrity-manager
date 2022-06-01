@@ -28,20 +28,32 @@ public class ValidationResult implements ExecutableSet {
     @Getter
     ComparisonResult comparisonResult;
 
+    @Setter
+    @Getter
+    EnumComparisonStatus sQLComparisonStatus = EnumComparisonStatus.MATCHED;
+
+    @Setter
+    @Getter
+    EnumComparisonStatus dataComparisonStatusForNewSummary = EnumComparisonStatus.MATCHED;
+
+    @Setter
+    @Getter
+    EnumComparisonStatus dataComparisonStatus = EnumComparisonStatus.MATCHED;
+
     @Override
     public Executable getExecutable() {
         return sourceExecutionResult;
     }
 
-    @Override
-    public EnumComparisonStatus getSQLComparisonStatus() {
-        return EnumComparisonStatus.MATCHED;
-    }
-
-    @Override
-    public EnumComparisonStatus getDataComparisonStatusForNewSummary() {
-        return EnumComparisonStatus.MATCHED;
-    }
+//    @Override
+//    public EnumComparisonStatus getSQLComparisonStatus() {
+//        return EnumComparisonStatus.MATCHED;
+//    }
+//
+//    @Override
+//    public EnumComparisonStatus getDataComparisonStatusForNewSummary() {
+//        return EnumComparisonStatus.MATCHED;
+//    }
 
     @Override
     public int getRwdDataDifferenceCount() {
@@ -78,8 +90,8 @@ public class ValidationResult implements ExecutableSet {
         return targetExecutionResult;
     }
 
-    @Override
-    public EnumComparisonStatus getDataComparisonStatus() {
-        return EnumComparisonStatus.MATCHED;
-    }
+//    @Override
+//    public EnumComparisonStatus getDataComparisonStatus() {
+//        return EnumComparisonStatus.MATCHED;
+//    }
 }

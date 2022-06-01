@@ -23,7 +23,7 @@ public class ReportExecutionResult extends ExecutableInfo implements ExecutionRe
 
     @Override
     public EnumExecutionStatus getExecutionStatus() {
-        return null;
+        return EnumExecutionStatus.ERROR;
     }
 
     @Override

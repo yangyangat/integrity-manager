@@ -4,6 +4,7 @@ import com.microstrategy.tools.integritymanager.model.bo.ValidataionInfo;
 import com.microstrategy.tools.integritymanager.model.bo.ValidationResult;
 import com.microstrategy.tools.integritymanager.model.entity.filesystem.data.DataDiffHolderJson;
 import com.microstrategy.tools.integritymanager.model.entity.filesystem.summary.SummaryJson;
+import com.microstrategy.tools.integritymanager.model.entity.filesystem.upgradeimpacts.UpgradeImpactsHolderJson;
 import com.microstrategy.tools.integritymanager.util.FileUtil;
 import lombok.Data;
 import lombok.NoArgsConstructor;
@@ -22,7 +23,6 @@ import java.util.concurrent.ConcurrentMap;
 
 @Component
 public class BaselineFileMapper {
-
     @Data
     @Accessors(chain = true)
     @NoArgsConstructor
@@ -129,6 +129,11 @@ public class BaselineFileMapper {
         dataDiffHolderJson.populateBase(sourceData, diff);
         dataDiffHolderJson.populateTarget(targetData, diff);
         FileUtil.jsonObjectToFile(dataDiffHolderJson, dataDiffFile);
+    }
+
+    public void updateUpgradeImpacts(String jobId, UpgradeImpactsHolderJson upgradeImpacts) throws IOException {
+        BaselineInfoFileSystem baselineInfo = mapOfBaselineInfos.get(jobId);
+        FileUtil.jsonObjectToFile(upgradeImpacts, baselineInfo.getUpgradeImpactsFile());
     }
 
     private String getBaselineDirectory() {
