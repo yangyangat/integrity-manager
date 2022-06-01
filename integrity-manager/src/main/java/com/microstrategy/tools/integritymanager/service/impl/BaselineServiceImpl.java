@@ -5,6 +5,7 @@ import com.microstrategy.tools.integritymanager.model.bo.ReportExecutionResult;
 import com.microstrategy.tools.integritymanager.model.bo.ValidataionInfo;
 import com.microstrategy.tools.integritymanager.model.bo.ValidationResult;
 import com.microstrategy.tools.integritymanager.model.entity.convertor.DataConvertor;
+import com.microstrategy.tools.integritymanager.model.entity.filesystem.upgradeimpacts.UpgradeImpactsHolderJson;
 import com.microstrategy.tools.integritymanager.service.intf.BaselineService;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
@@ -47,6 +48,11 @@ public class BaselineServiceImpl implements BaselineService {
         List<List<Object>> targetData = DataConvertor.restToFileSystem(target.getReport());
         boolean[][] diff = {};
         baselineFileMapper.updateDataDiff(jobId, objectId, sourceData, targetData, diff);
+    }
+
+    @Override
+    public void updateUpgradeImpacts(String jobId, UpgradeImpactsHolderJson upgradeImpacts) throws IOException {
+        baselineFileMapper.updateUpgradeImpacts(jobId, upgradeImpacts);
     }
 
     @Override

@@ -3,8 +3,10 @@ package com.microstrategy.tools.integritymanager.model.bo;
 import com.microstrategy.tools.integritymanager.model.bo.intf.Executable;
 import com.microstrategy.tools.integritymanager.model.entity.mstr.ObjectInfo;
 import lombok.Data;
+import lombok.experimental.Accessors;
 
 @Data
+@Accessors(chain = true)
 public class ExecutableInfo implements Executable {
     private ObjectInfo objectInfo;
     private int execID;

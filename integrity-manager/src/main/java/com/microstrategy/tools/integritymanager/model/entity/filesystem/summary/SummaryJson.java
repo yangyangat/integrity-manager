@@ -18,7 +18,7 @@ public class SummaryJson {
 
     /**
      * Build the summary json object.
-     * @param testerModel The test model.
+     * @param executableSets The test model.
      * @return The object.
      */
     public static SummaryJson build(List<? extends ExecutableSet> executableSets) {
