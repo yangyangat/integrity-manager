@@ -15,7 +15,11 @@ import lombok.experimental.Accessors;
 public class ReportExecutionResult extends ExecutableInfo implements ExecutionResult {
     @Setter
     @Getter
-    private String report;
+    private String report = "";
+
+    @Setter
+    @Getter
+    private String detailedExecStatus = "\n";
 
     public static ReportExecutionResult build() {
         return new ReportExecutionResult();
@@ -26,10 +30,10 @@ public class ReportExecutionResult extends ExecutableInfo implements ExecutionRe
         return EnumExecutionStatus.ERROR;
     }
 
-    @Override
-    public String getDetailedExecStatus() {
-        return null;
-    }
+//    @Override
+//    public String getDetailedExecStatus() {
+//        return null;
+//    }
 
     @Override
     public String getPrevDetailedStatus() {

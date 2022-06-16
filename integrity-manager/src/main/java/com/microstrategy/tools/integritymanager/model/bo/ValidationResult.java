@@ -18,27 +18,35 @@ public class ValidationResult implements ExecutableSet {
 
     @Setter
     @Getter
-    ReportExecutionResult sourceExecutionResult;
+    private ReportExecutionResult sourceExecutionResult;
 
     @Setter
     @Getter
-    ReportExecutionResult targetExecutionResult;
+    private ReportExecutionResult targetExecutionResult;
 
     @Setter
     @Getter
-    ComparisonResult comparisonResult;
+    private ComparisonResult comparisonResult;
 
     @Setter
     @Getter
-    EnumComparisonStatus sQLComparisonStatus = EnumComparisonStatus.MATCHED;
+    private EnumComparisonStatus sQLComparisonStatus = EnumComparisonStatus.NOT_COMPARED;
 
     @Setter
     @Getter
-    EnumComparisonStatus dataComparisonStatusForNewSummary = EnumComparisonStatus.MATCHED;
+    private EnumComparisonStatus dataComparisonStatusForNewSummary = EnumComparisonStatus.NOT_COMPARED;
 
     @Setter
     @Getter
-    EnumComparisonStatus dataComparisonStatus = EnumComparisonStatus.MATCHED;
+    private EnumComparisonStatus dataComparisonStatus = EnumComparisonStatus.NOT_COMPARED;
+
+    @Setter
+    @Getter
+    private int rwdDataDifferenceCount = 0;
+
+    @Setter
+    @Getter
+    private int rwdSqlDifferenceCount = 0;
 
     @Override
     public Executable getExecutable() {
@@ -55,15 +63,15 @@ public class ValidationResult implements ExecutableSet {
 //        return EnumComparisonStatus.MATCHED;
 //    }
 
-    @Override
-    public int getRwdDataDifferenceCount() {
-        return 0;
-    }
-
-    @Override
-    public int getRwdSqlDifferenceCount() {
-        return 0;
-    }
+//    @Override
+//    public int getRwdDataDifferenceCount() {
+//        return 0;
+//    }
+//
+//    @Override
+//    public int getRwdSqlDifferenceCount() {
+//        return 0;
+//    }
 
     @Override
     public int getRwdDataNodeCount() {
