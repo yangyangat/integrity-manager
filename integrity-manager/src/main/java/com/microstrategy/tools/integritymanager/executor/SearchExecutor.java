@@ -87,6 +87,7 @@ public class SearchExecutor {
         JsonNode searchResult = searchResponse.getBody();
 
         return StreamSupport.stream(searchResult.get("result").spliterator(), true)
+                //.filter(obj -> obj.get("subtype").asInt(0) == 768)  //Only get the normal reports
                 .map(obj -> obj.get("id").asText())
                 .collect(Collectors.toList());
     }

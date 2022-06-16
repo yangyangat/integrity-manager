@@ -1,6 +1,7 @@
 package com.microstrategy.tools.integritymanager.service.impl;
 
 import com.microstrategy.tools.integritymanager.mapper.BaselineFileMapper;
+import com.microstrategy.tools.integritymanager.model.bo.ComparisonResult;
 import com.microstrategy.tools.integritymanager.model.bo.ReportExecutionResult;
 import com.microstrategy.tools.integritymanager.model.bo.ValidataionInfo;
 import com.microstrategy.tools.integritymanager.model.bo.ValidationResult;
@@ -46,7 +47,7 @@ public class BaselineServiceImpl implements BaselineService {
     public void updateComparison(String jobId, String projectId, String objectId, Object comparisonResult, ReportExecutionResult source, ReportExecutionResult target) throws IOException {
         List<List<Object>> sourceData = DataConvertor.restToFileSystem(source.getReport());
         List<List<Object>> targetData = DataConvertor.restToFileSystem(target.getReport());
-        boolean[][] diff = {};
+        boolean[][] diff = ((ComparisonResult) comparisonResult).getDiff();
         baselineFileMapper.updateDataDiff(jobId, objectId, sourceData, targetData, diff);
     }
 

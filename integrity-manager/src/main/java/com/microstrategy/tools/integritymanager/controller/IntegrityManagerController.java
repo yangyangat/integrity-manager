@@ -14,7 +14,10 @@ import org.springframework.web.bind.annotation.*;
 
 import java.io.IOException;
 import java.time.LocalDateTime;
-import java.util.*;
+import java.util.ArrayList;
+import java.util.List;
+import java.util.Map;
+import java.util.Optional;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
@@ -63,7 +66,8 @@ public class IntegrityManagerController {
         String sourceProjectId = "B19DEDCC11D4E0EFC000EB9495D0F44F";
         ExecutorService sourceExecutionExecutors = Executors.newFixedThreadPool(5);
 
-        String targetLibraryUrl = "http://10.23.34.25:8080/MicroStrategyLibrary";
+        //String targetLibraryUrl = "http://10.23.34.25:8080/MicroStrategyLibrary";
+        String targetLibraryUrl = "http://10.27.69.70:8080/MicroStrategyLibrary";
         //MSTRAuthToken targetToken = loginService.login(targetLibraryUrl, "administrator", "");
         List<MSTRAuthToken> targetTokenList = loginService.login(targetLibraryUrl, "administrator", "", sessionCount);
         String targetProjectId = "B19DEDCC11D4E0EFC000EB9495D0F44F";
@@ -78,6 +82,7 @@ public class IntegrityManagerController {
         List<String> sourceObjectIds = searchService.getTopNReportIds(sourceLibraryUrl, sourceTokenList.get(0), sourceProjectId, countInt);
         //sourceObjectIds = Arrays.asList("13CFD83A458A68655A13CBA8D7C62CD5");
         //sourceObjectIds = Arrays.asList("0A9EBE87468B751C3663818889B10D73");
+        //sourceObjectIds = Arrays.asList("00DBE0954D559B4424495898537D6143");
 
         List<String> targetObjectIds = new ArrayList<>(sourceObjectIds);
 
@@ -133,6 +138,9 @@ public class IntegrityManagerController {
                                         e.printStackTrace();
                                     }
                                 }
+                                else {
+                                    sourceReportExecutionResult.setDetailedExecStatus(error.getLocalizedMessage());
+                                }
                             });
 
                     CompletableFuture<ObjectInfo> sourceObjectInfoExecution = executionService.executeObjectInfoAsync(sourceLibraryUrl, executionPair.getSourceToken(), sourceProjectId,
@@ -162,6 +170,9 @@ public class IntegrityManagerController {
                                         e.printStackTrace();
                                     }
                                 }
+                                else {
+                                    targetReportExecutionResult.setDetailedExecStatus(error.getLocalizedMessage());
+                                }
                             });
 
                     CompletableFuture<ObjectInfo> targetObjectInfoExecution = executionService.executeObjectInfoAsync(targetLibraryUrl, executionPair.getTargetToken(), targetProjectId,
@@ -179,19 +190,29 @@ public class IntegrityManagerController {
                     });
 
                     CompletableFuture<Object> comparison = sourceObjectWithObjectInfo.thenCombineAsync(targetObjectWithObjectInfo, (source, target) -> {
-                        return comparisonService.compareResult(source.getReport(), target.getReport());
-                    }).whenComplete((comparisonResult, error) -> {
+                        //return comparisonService.compareResult(source.getReport(), target.getReport());
+                        return comparisonService.compareReportResult(source, target);
+                    }).whenComplete((result, error) -> {
                         if (error == null) {
-                            comparisonService.printDifferent(comparisonResult);
+                            comparisonService.printDifferent(result);
 
                             //TODO, update result model and persist baseline
                             try {
-                                baselineService.updateComparison(jobId, sourceProjectId, executionPair.getSourceObjectId(), comparisonResult,
+                                baselineService.updateComparison(jobId, sourceProjectId, executionPair.getSourceObjectId(), result,
                                         sourceObjectWithObjectInfo.getNow(null), targetObjectWithObjectInfo.getNow(null));
                             } catch (IOException e) {
                                 e.printStackTrace();
                             }
-                            validationResult.setComparisonResult(new ComparisonResult());
+                            ComparisonResult comparisonResult = (ComparisonResult) result;
+                            EnumComparisonStatus comparisonStatus = comparisonResult.getComparisonStatus();
+                            validationResult.setComparisonResult(comparisonResult);
+                            validationResult.setDataComparisonStatus(comparisonStatus);
+                            validationResult.setDataComparisonStatusForNewSummary(comparisonStatus);
+                            if (comparisonStatus == EnumComparisonStatus.NOT_MATCHED) {
+                                //TODO, the data difference count and sql difference count need to move to the comaprison result as well.
+                                validationResult.setRwdDataDifferenceCount(1);
+                                validationResult.setRwdSqlDifferenceCount(1);
+                            }
                         }
                         else {
                             validationResult.setDataComparisonStatus(EnumComparisonStatus.ERROR);
