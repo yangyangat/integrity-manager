@@ -29,12 +29,12 @@ public class BaselineServiceImpl implements BaselineService {
     }
 
     @Override
-    public void updateSourceBaseline(String jobId, String objectId, String result) throws IOException {
+    public void updateSourceBaseline(String jobId, String objectId, ReportExecutionResult result) throws IOException {
         baselineFileMapper.updateSourceBaseline(jobId, objectId, result);
     }
 
     @Override
-    public void updateTargetBaseline(String jobId, String objectId, String result) throws IOException {
+    public void updateTargetBaseline(String jobId, String objectId, ReportExecutionResult result) throws IOException {
         baselineFileMapper.updateTargetBaseline(jobId, objectId, result);
     }
 
@@ -45,10 +45,18 @@ public class BaselineServiceImpl implements BaselineService {
 
     @Override
     public void updateComparison(String jobId, String projectId, String objectId, Object comparisonResult, ReportExecutionResult source, ReportExecutionResult target) throws IOException {
+        //update data comparison
         List<List<Object>> sourceData = DataConvertor.restToFileSystem(source.getReport());
         List<List<Object>> targetData = DataConvertor.restToFileSystem(target.getReport());
         boolean[][] diff = ((ComparisonResult) comparisonResult).getDiff();
         baselineFileMapper.updateDataDiff(jobId, objectId, sourceData, targetData, diff);
+
+        //update sql comparison
+
+        //TODO, get the sql diff for both source and target
+        int sourceSqlDiff[] = {};
+        int targetSqlDiff[] = {};
+        baselineFileMapper.updateSqlDiff(jobId, objectId, sourceSqlDiff, targetSqlDiff);
     }
 
     @Override

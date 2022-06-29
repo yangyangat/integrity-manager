@@ -1,8 +1,11 @@
 package com.microstrategy.tools.integritymanager.mapper;
 
+import com.microstrategy.tools.integritymanager.model.bo.ReportExecutionResult;
 import com.microstrategy.tools.integritymanager.model.bo.ValidataionInfo;
 import com.microstrategy.tools.integritymanager.model.bo.ValidationResult;
 import com.microstrategy.tools.integritymanager.model.entity.filesystem.data.DataDiffHolderJson;
+import com.microstrategy.tools.integritymanager.model.entity.filesystem.sql.SqlDiffHolderJson;
+import com.microstrategy.tools.integritymanager.model.entity.filesystem.sql.SqlDiffMetadataJson;
 import com.microstrategy.tools.integritymanager.model.entity.filesystem.summary.SummaryJson;
 import com.microstrategy.tools.integritymanager.model.entity.filesystem.upgradeimpacts.UpgradeImpactsHolderJson;
 import com.microstrategy.tools.integritymanager.util.FileUtil;
@@ -15,6 +18,7 @@ import java.io.IOException;
 import java.net.URI;
 import java.net.URISyntaxException;
 import java.nio.file.Files;
+import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.text.SimpleDateFormat;
 import java.util.*;
@@ -23,6 +27,7 @@ import java.util.concurrent.ConcurrentMap;
 
 @Component
 public class BaselineFileMapper {
+
     @Data
     @Accessors(chain = true)
     @NoArgsConstructor
@@ -100,18 +105,20 @@ public class BaselineFileMapper {
         mapOfBaselineInfos.put(jobId, baselineInfo);
     }
 
-    public void updateSourceBaseline(String jobId, String objectId, String result) throws IOException {
+    public void updateSourceBaseline(String jobId, String objectId, ReportExecutionResult result) throws IOException {
         BaselineInfoFileSystem baselineInfo = mapOfBaselineInfos.get(jobId);
         String objectFileName = baselineInfo.getSourceObjectIdToFileName().get(objectId);
 
-        Files.writeString(Paths.get(baselineInfo.getSourceBaselinePath(), objectFileName + ".json"), result);
+        Files.writeString(Paths.get(baselineInfo.getSourceBaselinePath(), objectFileName + ".json"), result.getReport());
+        Files.writeString(Paths.get(baselineInfo.getSourceBaselinePath(), objectFileName + ".sql"), result.getSqlStatement());
     }
 
-    public void updateTargetBaseline(String jobId, String objectId, String result) throws IOException {
+    public void updateTargetBaseline(String jobId, String objectId, ReportExecutionResult result) throws IOException {
         BaselineInfoFileSystem baselineInfo = mapOfBaselineInfos.get(jobId);
         String objectFileName = baselineInfo.getTargetObjectIdToFileName().get(objectId);
 
-        Files.writeString(Paths.get(baselineInfo.getTargetBaselinePath(), objectFileName + ".json"), result);
+        Files.writeString(Paths.get(baselineInfo.getTargetBaselinePath(), objectFileName + ".json"), result.getReport());
+        Files.writeString(Paths.get(baselineInfo.getTargetBaselinePath(), objectFileName + ".sql"), result.getSqlStatement());
     }
 
     public void updateValidationSummary(String jobId, List<ValidationResult> validationResultSet) throws IOException {
@@ -134,6 +141,40 @@ public class BaselineFileMapper {
     public void updateUpgradeImpacts(String jobId, UpgradeImpactsHolderJson upgradeImpacts) throws IOException {
         BaselineInfoFileSystem baselineInfo = mapOfBaselineInfos.get(jobId);
         FileUtil.jsonObjectToFile(upgradeImpacts, baselineInfo.getUpgradeImpactsFile());
+    }
+
+    public void updateSqlDiff(String jobId, String objectId, int[] sourceSqlDiff, int[] targetSqlDiff) throws IOException {
+        SqlDiffHolderJson sqlDiffHolderJson = new SqlDiffHolderJson();
+
+        BaselineInfoFileSystem baselineInfo = mapOfBaselineInfos.get(jobId);
+        String diffPath = baselineInfo.mapOfObjectsDiffPath.get(objectId);
+
+        String sourceBaselinePath = baselineInfo.getSourceBaselinePath();
+        String sourceBaselineFolder = Paths.get(sourceBaselinePath).getFileName().toString();
+
+        String objectFileName = baselineInfo.getTargetObjectIdToFileName().get(objectId);
+        Path sourceRelativeSqlFilePath = Paths.get(diffPath).relativize(Paths.get(baselineInfo.getSourceBaselinePath(), objectFileName + ".sql"));
+
+        SqlDiffMetadataJson sourceSqlDiffMetadataJson = SqlDiffMetadataJson.build()
+                //TODO, to get and set the sql contain unicode info
+//                .setSqlsContainUnicode(determineSqlsContainUnicode(this.baseExecutionResult,
+//                        rwDiffNode, rwDiffNode == null ? null : rwDiffNode::getBaseSqlsContainUnicode))
+                .setResultFolder(sourceBaselineFolder);
+        sqlDiffHolderJson.populateBase(sourceSqlDiff, sourceRelativeSqlFilePath.toString(), sourceSqlDiffMetadataJson);
+
+        String targetBaselinePath = baselineInfo.getTargetBaselinePath();
+        String targetBaselineFolder = Paths.get(targetBaselinePath).getFileName().toString();
+
+        Path targetRelativeSqlFilePath = Paths.get(diffPath).relativize(Paths.get(baselineInfo.getTargetBaselinePath(), objectFileName + ".sql"));
+        SqlDiffMetadataJson targetSqlDiffMetadataJson = SqlDiffMetadataJson.build()
+                //TODO, to get and set the sql contain unicode info
+//                .setSqlsContainUnicode(determineSqlsContainUnicode(this.baseExecutionResult,
+//                        rwDiffNode, rwDiffNode == null ? null : rwDiffNode::getBaseSqlsContainUnicode))
+                .setResultFolder(targetBaselineFolder);
+        sqlDiffHolderJson.populateTarget(targetSqlDiff, targetRelativeSqlFilePath.toString(), targetSqlDiffMetadataJson);
+
+        String sqlDiffFile = Paths.get(diffPath, "sql_diff.json").toAbsolutePath().toString();
+        FileUtil.jsonObjectToFile(sqlDiffHolderJson, sqlDiffFile);
     }
 
     private String getBaselineDirectory() {
