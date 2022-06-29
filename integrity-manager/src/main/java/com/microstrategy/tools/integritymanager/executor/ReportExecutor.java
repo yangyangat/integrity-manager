@@ -1,13 +1,25 @@
 package com.microstrategy.tools.integritymanager.executor;
 
+import com.google.common.base.Joiner;
 import com.microstrategy.tools.integritymanager.exception.ReportExecutionException;
 import com.microstrategy.tools.integritymanager.exception.ReportExecutorInternalException;
+import com.microstrategy.tools.integritymanager.model.bo.ReportExecutionResult;
+import com.microstrategy.tools.integritymanager.model.entity.mstr.report.ExecutionResultFormat;
+import com.microstrategy.tools.integritymanager.model.entity.mstr.report.ReportInstance;
 import com.microstrategy.tools.integritymanager.model.entity.mstr.report.ReportInstanceStatus;
+import com.microstrategy.tools.integritymanager.model.entity.mstr.report.ReportSqlStatement;
+import com.microstrategy.tools.integritymanager.util.UrlHelper;
 import org.apache.http.client.methods.CloseableHttpResponse;
 import org.apache.http.client.methods.HttpPost;
 import org.apache.http.entity.ByteArrayEntity;
 import org.apache.http.impl.client.CloseableHttpClient;
 import org.apache.http.impl.client.HttpClients;
+import org.springframework.http.HttpEntity;
+import org.springframework.http.HttpHeaders;
+import org.springframework.http.HttpMethod;
+import org.springframework.http.ResponseEntity;
+import org.springframework.web.client.RestClientException;
+import org.springframework.web.client.RestTemplate;
 
 import java.io.BufferedReader;
 import java.io.IOException;
@@ -17,6 +29,10 @@ import java.net.HttpURLConnection;
 import java.net.MalformedURLException;
 import java.net.URL;
 import java.nio.charset.StandardCharsets;
+import java.util.Arrays;
+import java.util.EnumSet;
+import java.util.List;
+import java.util.Map;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
@@ -29,6 +45,8 @@ public class ReportExecutor {
     private String projectId;
     private String reportId;
     private String libraryUrl;
+
+    private RestTemplate restTemplate = new RestTemplate();
 
     public static ReportExecutor build() {
         return new ReportExecutor();
@@ -49,11 +67,73 @@ public class ReportExecutor {
     }
 
     /**
+     * Execute a report.
+     * @param responseType specifies the response type of the report execution result
+     * @return
+     * @throws ReportExecutorInternalException
+     * @throws ReportExecutionException
+     */
+    public <T> ResponseEntity<T> execute(Class<T> responseType) throws ReportExecutorInternalException, ReportExecutionException {
+        return execute(60 * 30, responseType);
+    }
+
+    /**
+     * Execute a report.
+     * @param resultFormats specifies the format type of the report execution result
+     * @return
+     * @throws ReportExecutorInternalException
+     * @throws ReportExecutionException
+     */
+    public ReportExecutionResult execute(EnumSet resultFormats) throws ReportExecutorInternalException, ReportExecutionException {
+        return execute(60 * 30, resultFormats);
+    }
+
+    /**
      * Execute the report.
      * @param maxWaitSecond Max seconds to wait before got data
-     * @return The data of the report in format of csv
+     * @return The data of the report in format of json string
      */
     public String execute(int maxWaitSecond) throws ReportExecutionException, ReportExecutorInternalException {
+        String instanceId = createReportInstanceAndAnwserPrompts(maxWaitSecond);
+
+        // Get the report data
+        return fetchReportInstanceData(instanceId);
+    }
+
+    /**
+     * Execute the report.
+     * @param maxWaitSecond Max seconds to wait before got data
+     * @return The data of the report in format of ResponseEntity<T>
+     */
+    public <T> ResponseEntity<T> execute(int maxWaitSecond, Class<T> responseType) throws ReportExecutionException, ReportExecutorInternalException {
+        String instanceId = createReportInstanceAndAnwserPrompts(maxWaitSecond);
+
+        // Get the report data
+        return fetchReportInstanceData(instanceId, responseType);
+    }
+
+    /**
+     * Execute the report.
+     * @param maxWaitSecond Max seconds to wait before got data
+     * @return The data of the report in format of ResponseEntity<T>
+     */
+    public ReportExecutionResult execute(int maxWaitSecond, EnumSet resultFormats) throws ReportExecutionException, ReportExecutorInternalException {
+        String instanceId = createReportInstanceAndAnwserPrompts(maxWaitSecond);
+
+        ReportExecutionResult result = new ReportExecutionResult();
+        // Get the report in string
+        String report = fetchReportInstanceData(instanceId);
+        result.setReport(report);
+
+        if (resultFormats.contains(ExecutionResultFormat.SQL)) {
+            ReportSqlStatement sqlStatement = this.fetchReportSqlStatement(instanceId);
+            result.setSqlStatement(sqlStatement.getSqlStatement());
+        }
+
+        return result;
+    }
+
+    private String createReportInstanceAndAnwserPrompts(int maxWaitSecond) throws ReportExecutorInternalException, ReportExecutionException {
         if (!validateParams()) {
             throw new ReportExecutorInternalException("At least one of the following is not set: " +
                     "authToken, cookie, projectId, reportId, libraryUrl");
@@ -84,10 +164,7 @@ public class ReportExecutor {
                     String.format("Max wait time (%d)s exceeds when executing the report: %s",
                             maxWaitSecond, this.reportId));
         }
-
-        // Get the report data
-        return fetchReportInstanceData(instanceId);
-
+        return instanceId;
     }
 
     private String createReportInstance() throws ReportExecutionException {
@@ -154,6 +231,27 @@ public class ReportExecutor {
         }
     }
 
+    private <T> ResponseEntity<T> fetchReportInstanceData(String instanceId, Class<T> responseType) throws ReportExecutionException {
+        HttpHeaders headers = new HttpHeaders();
+        headers.add("X-MSTR-AuthToken", this.authToken);
+        headers.add("X-MSTR-ProjectID", this.projectId);
+        headers.addAll("Cookie", Arrays.asList(this.cookie));
+        headers.add("Content-Type", "application/json");
+        headers.add("Accept", "*/*");
+        HttpEntity<Map<String,Object>> requestEntity = new HttpEntity<>(headers);
+
+        String url = String.format("%s/api/v2/reports/%s/instances/%s", this.libraryUrl, this.reportId, instanceId);
+
+        try {
+            ResponseEntity<T> reportInstance = restTemplate.exchange(url, HttpMethod.GET, requestEntity, responseType);
+            return reportInstance;
+        }
+        catch (RestClientException exception) {
+            exception.printStackTrace();
+            throw new ReportExecutionException(exception.getLocalizedMessage(), exception);
+        }
+    }
+
     private String fetchReportInstanceData(String instanceId) throws ReportExecutionException {
         HttpURLConnection conn = null;
         try {
@@ -170,7 +268,6 @@ public class ReportExecutor {
 
             return responseBody;
             //return Json2Csv.convert(responseBody);
-
         } catch (MalformedURLException e) {
             throw new ReportExecutionException("Invalid URL", e);
         } catch (IOException e) {
@@ -182,6 +279,28 @@ public class ReportExecutor {
                 conn.disconnect();
             }
         }
+    }
+
+    private ReportSqlStatement fetchReportSqlStatement(String instanceId) throws ReportExecutionException {
+        HttpHeaders headers = new HttpHeaders();
+        headers.add("X-MSTR-AuthToken", this.authToken);
+        headers.add("X-MSTR-ProjectID", this.projectId);
+        headers.addAll("Cookie", Arrays.asList(this.cookie));
+        headers.add("Content-Type", "application/json");
+        headers.add("Accept", "*/*");
+        HttpEntity<Map<String,Object>> requestEntity = new HttpEntity<>(headers);
+
+        String url = String.format("%s/api/v2/reports/%s/instances/%s/sqlView", this.libraryUrl, this.reportId, instanceId);
+
+        try {
+            ResponseEntity<ReportSqlStatement> sqlStatementResponse = restTemplate.exchange(url, HttpMethod.GET, requestEntity, ReportSqlStatement.class);
+            return sqlStatementResponse.getBody();
+        }
+        catch (RestClientException exception) {
+            exception.printStackTrace();
+            throw new ReportExecutionException(exception.getLocalizedMessage(), exception);
+        }
+
     }
 
     protected String getReportInstanceId(String finalStr) throws ReportExecutionException {
@@ -326,7 +445,7 @@ public class ReportExecutor {
         //String projectId = "B7CA92F04B9FAE8D941C3E9B7E0CD754"; //"B19DEDCC11D4E0EFC000EB9495D0F44F";
         String projectId = "B19DEDCC11D4E0EFC000EB9495D0F44F";
         // 256263D142248D56446F3A80AD100C06<-no prompt have prompt->E63835F111D5C49EC0000C881FDA1A4F
-        String reportId = "028F2A1446B9ACA28C7ED79D75232B21";//"125F9FB34CEB75E36192E7A7C784EE52";
+        String reportId = "13CFD83A458A68655A13CBA8D7C62CD5";//"028F2A1446B9ACA28C7ED79D75232B21";//"125F9FB34CEB75E36192E7A7C784EE52";
 
         try(CloseableHttpClient client = HttpClients.createDefault()) {
             HttpPost post = new HttpPost(String.join("/", libraryPath, "api", "auth/login"));
@@ -347,9 +466,13 @@ public class ReportExecutor {
                 .setAuthToken(authToken).setProjectId(projectId).setReportId(reportId);
 
         try {
-            String res = reportExecutor.execute();
+            ResponseEntity<ReportInstance> res = reportExecutor.execute(ReportInstance.class);
 
-            System.out.println("res = \n" + res);
+            String res2 = reportExecutor.execute();
+
+            System.out.println("res = \n" + res.getBody());
+
+            System.out.println("res2 = \n" + res2);
         } catch (Exception e) {
             //e.printStackTrace();
         }

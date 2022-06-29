@@ -126,13 +126,16 @@ public class IntegrityManagerController {
                     ReportExecutionResult targetReportExecutionResult = new ReportExecutionResult();
                     targetReportExecutionResult.setExecID(executionPair.getExecutionId());
 
-                    CompletableFuture<String> sourceObjectExecution = executionService.executeAsync(sourceLibraryUrl, executionPair.getSourceToken(), sourceProjectId,
+                    CompletableFuture<Object> sourceObjectExecution = executionService.executeAsync(sourceLibraryUrl, executionPair.getSourceToken(), sourceProjectId,
                             executionPair.getSourceObjectId(), executionPair.getSourceObjectType(),null, sourceExecutionExecutors)
                             .whenCompleteAsync((result, error) -> {
                                 if (error == null) {
                                     try {
-                                        baselineService.updateSourceBaseline(jobId, executionPair.getTargetObjectId(), result);
-                                        sourceReportExecutionResult.setReport(result);
+                                        ReportExecutionResult executionResult = (ReportExecutionResult) result;
+                                        baselineService.updateSourceBaseline(jobId, executionPair.getTargetObjectId(), executionResult);
+                                        sourceReportExecutionResult.setReport(executionResult.getReport());
+                                        sourceReportExecutionResult.setSqlStatement(executionResult.getSqlStatement());
+                                        sourceReportExecutionResult.setResultFormats(executionResult.getResultFormats());
                                         //validationResult.setSourceExecutionResult(ReportExecutionResult.build().setReport(result));
                                     } catch (IOException e) {
                                         e.printStackTrace();
@@ -158,13 +161,16 @@ public class IntegrityManagerController {
                         validationResult.setSourceExecutionResult(sourceReportExecutionResult);
                     });
 
-                    CompletableFuture<String> targetObjectExecution = executionService.executeAsync(targetLibraryUrl, executionPair.getTargetToken(), targetProjectId,
+                    CompletableFuture<Object> targetObjectExecution = executionService.executeAsync(targetLibraryUrl, executionPair.getTargetToken(), targetProjectId,
                             executionPair.getTargetObjectId(), executionPair.getTargetObjectType(),null, targetExecutionExecutors)
                             .whenCompleteAsync((result, error) -> {
                                 if (error == null) {
                                     try {
-                                        baselineService.updateTargetBaseline(jobId, executionPair.getTargetObjectId(), result);
-                                        targetReportExecutionResult.setReport(result);
+                                        ReportExecutionResult executionResult = (ReportExecutionResult) result;
+                                        baselineService.updateTargetBaseline(jobId, executionPair.getTargetObjectId(), executionResult);
+                                        targetReportExecutionResult.setReport(executionResult.getReport());
+                                        targetReportExecutionResult.setSqlStatement(executionResult.getSqlStatement());
+                                        targetReportExecutionResult.setResultFormats(executionResult.getResultFormats());
                                         //validationResult.setTargetExecutionResult(ReportExecutionResult.build().setReport(result));
                                     } catch (IOException e) {
                                         e.printStackTrace();

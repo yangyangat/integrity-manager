@@ -16,9 +16,9 @@ public interface BaselineService {
 
     void initBaseline(ValidataionInfo validationInfo) throws IOException;
 
-    void updateSourceBaseline(String jobId, String objectId, String result) throws IOException;
+    void updateSourceBaseline(String jobId, String objectId, ReportExecutionResult result) throws IOException;
 
-    void updateTargetBaseline(String jobId, String objectId, String result) throws IOException;
+    void updateTargetBaseline(String jobId, String objectId, ReportExecutionResult result) throws IOException;
 
     void updateValidationSummary(String jobId, List<ValidationResult> validationResultSet) throws IOException ;
 
