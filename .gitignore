@@ -1,2 +1,3 @@
 # Project exclude paths
 /integrity-manager/target/
+/.idea/libraries/

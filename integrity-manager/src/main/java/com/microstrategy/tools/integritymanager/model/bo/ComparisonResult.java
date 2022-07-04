@@ -1,15 +1,16 @@
 package com.microstrategy.tools.integritymanager.model.bo;
 
 import com.microstrategy.tools.integritymanager.constant.enums.EnumComparisonStatus;
-import lombok.Getter;
-import lombok.Setter;
+import lombok.Data;
 
+@Data
 public class ComparisonResult {
-    @Setter
-    @Getter
+
     private boolean[][] diff = {};
 
-    @Setter
-    @Getter
+    private int[] sourceSqlDiff = {};
+
+    private int[] targetSqlDiff = {};
+
     private EnumComparisonStatus comparisonStatus = EnumComparisonStatus.NOT_COMPARED;
 }

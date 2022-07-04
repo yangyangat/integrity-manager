@@ -2,9 +2,24 @@
 <project version="4">
   <component name="RemoteRepositoriesConfiguration">
     <remote-repository>
+      <option name="id" value="MSTR Nexus Releases" />
+      <option name="name" value="MSTR Nexus Releases" />
+      <option name="url" value="https://nexus.internal.microstrategy.com/content/repositories/releases/" />
+    </remote-repository>
+    <remote-repository>
       <option name="id" value="central" />
       <option name="name" value="Central Repository" />
       <option name="url" value="https://repo.maven.apache.org/maven2" />
+    </remote-repository>
+    <remote-repository>
+      <option name="id" value="MSTR Nexus" />
+      <option name="name" value="MSTR Nexus" />
+      <option name="url" value="http://nexus.internal.microstrategy.com:8081/content/repositories/releases/" />
+    </remote-repository>
+    <remote-repository>
+      <option name="id" value="MSTR Nexus Thirdparty" />
+      <option name="name" value="MSTR Nexus Thirdparty" />
+      <option name="url" value="https://nexus.internal.microstrategy.com/content/repositories/thirdparty/" />
     </remote-repository>
     <remote-repository>
       <option name="id" value="central" />
@@ -20,6 +35,16 @@
       <option name="id" value="central" />
       <option name="name" value="Central Repository" />
       <option name="url" value="http://maven.aliyun.com/nexus/content/groups/public" />
+    </remote-repository>
+    <remote-repository>
+      <option name="id" value="MSTR Nexus" />
+      <option name="name" value="MSTR Nexus" />
+      <option name="url" value="https://nexus.internal.microstrategy.com:8081/content/repositories/releases/" />
+    </remote-repository>
+    <remote-repository>
+      <option name="id" value="MSTR Nexus" />
+      <option name="name" value="MSTR Nexus" />
+      <option name="url" value="https://nexus.internal.microstrategy.com/content/repositories/releases/" />
     </remote-repository>
   </component>
 </project>
