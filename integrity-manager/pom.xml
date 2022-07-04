@@ -65,6 +65,88 @@
             <artifactId>guava</artifactId>
             <version>31.0.1-jre</version>
         </dependency>
+        <dependency>
+            <groupId>com.microstrategy.m2021</groupId>
+            <artifactId>MATester</artifactId>
+            <version>11.3.0730.00005</version>
+        </dependency>
+        <dependency>
+            <groupId>com.microstrategy.m2021</groupId>
+            <artifactId>WebBeans</artifactId>
+            <version>11.3.0730.00061</version>
+        </dependency>
+        <dependency>
+            <groupId>com.microstrategy.m2021</groupId>
+            <artifactId>WebUtils</artifactId>
+            <version>11.3.0730.00061</version>
+        </dependency>
+        <dependency>
+            <groupId>com.microstrategy.m2021</groupId>
+            <artifactId>JavaWebAPI</artifactId>
+            <version>11.3.0730.00061</version>
+        </dependency>
+        <dependency>
+            <groupId>com.microstrategy.m2021</groupId>
+            <artifactId>WebObjects</artifactId>
+            <version>11.3.0730.00061</version>
+        </dependency>
+        <dependency>
+            <groupId>com.microstrategy.m2021</groupId>
+            <artifactId>mainstj</artifactId>
+            <version>11.3.0730.00049</version>
+        </dependency>
+        <dependency>
+            <groupId>com.microstrategy.m2021</groupId>
+            <artifactId>MAUtils</artifactId>
+            <version>11.3.0730.00003</version>
+        </dependency>
+<!--        <dependency>-->
+<!--            <groupId>com.microstrategy</groupId>-->
+<!--            <artifactId>MATester</artifactId>-->
+<!--            <version>1.0</version>-->
+<!--            <scope>system</scope>-->
+<!--            <systemPath>${project.basedir}/src/main/resources/MATester.jar</systemPath>-->
+<!--        </dependency>-->
+<!--        <dependency>-->
+<!--            <groupId>com.microstrategy</groupId>-->
+<!--            <artifactId>WebUtils</artifactId>-->
+<!--            <version>1.0</version>-->
+<!--            <scope>system</scope>-->
+<!--            <systemPath>${project.basedir}/src/main/resources/WebUtils.jar</systemPath>-->
+<!--        </dependency>-->
+<!--        <dependency>-->
+<!--            <groupId>com.microstrategy</groupId>-->
+<!--            <artifactId>JavaWebAPI</artifactId>-->
+<!--            <version>1.0</version>-->
+<!--            <scope>system</scope>-->
+<!--            <systemPath>${project.basedir}/src/main/resources/JavaWebAPI.jar</systemPath>-->
+<!--        </dependency>-->
+<!--        <dependency>-->
+<!--            <groupId>org.apache.logging.log4j</groupId>-->
+<!--            <artifactId>log4j-core</artifactId>-->
+<!--            <version>2.17.2</version>-->
+<!--        </dependency>-->
+<!--        <dependency>-->
+<!--            <groupId>com.microstrategy</groupId>-->
+<!--            <artifactId>WebObjects</artifactId>-->
+<!--            <version>1.0</version>-->
+<!--            <scope>system</scope>-->
+<!--            <systemPath>${project.basedir}/src/main/resources/WebObjects.jar</systemPath>-->
+<!--        </dependency>-->
+<!--        <dependency>-->
+<!--            <groupId>com.microstrategy</groupId>-->
+<!--            <artifactId>mainstj</artifactId>-->
+<!--            <version>1.0</version>-->
+<!--            <scope>system</scope>-->
+<!--            <systemPath>${project.basedir}/src/main/resources/mainstj.jar</systemPath>-->
+<!--        </dependency>-->
+<!--        <dependency>-->
+<!--            <groupId>com.jars</groupId>-->
+<!--            <artifactId>diff_match_patch</artifactId>-->
+<!--            <version>1.0</version>-->
+<!--            <scope>system</scope>-->
+<!--            <systemPath>${project.basedir}/src/main/resources/diff_match_patch-1.0.jar</systemPath>-->
+<!--        </dependency>-->
     </dependencies>
 
     <build>
@@ -84,4 +166,16 @@
         </plugins>
     </build>
 
+    <repositories>
+        <repository>
+            <id>MSTR Nexus Releases</id>
+            <name>MSTR Nexus Releases</name>
+            <url>https://nexus.internal.microstrategy.com/content/repositories/releases/</url>
+        </repository>
+        <repository>
+            <id>MSTR Nexus Thirdparty</id>
+            <name>MSTR Nexus Thirdparty</name>
+            <url>https://nexus.internal.microstrategy.com/content/repositories/thirdparty/</url>
+        </repository>
+    </repositories>
 </project>

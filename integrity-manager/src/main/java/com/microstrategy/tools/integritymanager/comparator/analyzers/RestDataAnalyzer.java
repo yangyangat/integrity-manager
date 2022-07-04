@@ -1,4 +1,7 @@
-package com.microstrategy.tools.integritymanager.comparator.legacy.analyzers;
+package com.microstrategy.tools.integritymanager.comparator.analyzers;
+
+import com.microstrategy.MSTRTester.Interval;
+import com.microstrategy.MSTRTester.utils.BooleanHolder;
 
 import java.io.BufferedReader;
 import java.io.IOException;
@@ -12,56 +15,56 @@ import java.util.Vector;
  * @author AWong
  *
  */
-public class DataAnalyzer {
+public class RestDataAnalyzer {
 
-    private static final DataAnalyzer ANALYZER = new DataAnalyzer();
+    private static final RestDataAnalyzer ANALYZER = new RestDataAnalyzer();
 
     static final String CURRENT_WORKFLOW = "com.microstrategy.MSTRTester.analyzers.DataAnalyzer";
-	
-	private DataAnalyzer() {
+
+	private RestDataAnalyzer() {
 	}
-	
+
 	public static boolean isEquivalent(String lhsData, String rhsData, List<Interval> lhsDiffList, List<Interval> rhsDiffList) {
 		return isEquivalent (new BufferedReader(new StringReader(lhsData)), new BufferedReader(new StringReader(rhsData)), lhsDiffList, rhsDiffList);
 	}
 
 	/**
-	 * Takes two grid data (vector of vectors of strings) and return a 2-dimension boolean array 
+	 * Takes two grid data (vector of vectors of strings) and return a 2-dimension boolean array
 	 * marking differential cells
-	 * 
+	 *
 	 * @param lhsGridData first gridData to compare
 	 * @param rhsGridData the other gridData to compare
 	 * @return a 2-dimension boolean array identify which cells are different
 	 * @throws Exception
 	 */
 	public static boolean[][] markDifferentGridCells (Vector<Vector<Object>> lhsGridData, Vector<Vector<Object>> rhsGridData, BooleanHolder isEquiv) throws Exception {
-		
+
 		boolean isEquivalent = true;
 		if (lhsGridData == null || rhsGridData == null) //return null if either vector is null
 		{
 			if (isEquiv != null)
 				isEquiv.setBoolean(isEquivalent);
-			
+
 			return null;
 		}
-		
+
 		Vector<Vector<Object>> bigGridData = (lhsGridData.size() >= rhsGridData.size()) ? lhsGridData : rhsGridData;
 		Vector<Vector<Object>> smallGridData = (lhsGridData.size() < rhsGridData.size()) ? lhsGridData : rhsGridData;
 		int _maxRow = bigGridData.size();
 		int _minRow = smallGridData.size();
-		
+
 		if (_maxRow != _minRow)
 			isEquivalent = false;
-		
+
 		boolean isGridDataEquiv[][] = new boolean[_maxRow][];
-		
+
 		for (int i = 0; i < _maxRow; i++) {
 			//if it is a excess row, mark all as different
 			if (i >= _minRow) {
 				isGridDataEquiv[i] = new boolean[bigGridData.get(i).size()];
 				continue;
 			}
-			
+
 			//otherwise, compare cell by cell
 			Vector<Object> _lhsGridDataRow = lhsGridData.get(i);
 			Vector<Object> _rhsGridDataRow = rhsGridData.get(i);
@@ -69,21 +72,21 @@ public class DataAnalyzer {
 			Vector<Object> _smallGridDataRow = (_lhsGridDataRow.size() < _rhsGridDataRow.size()) ? _lhsGridDataRow : _rhsGridDataRow;
 			int _maxColumn = _bigGridDataRow.size();
 			int _minColumn = _smallGridDataRow.size();
-			
+
 			if (_maxColumn != _minColumn)
 				isEquivalent = false;
-			
+
 			isGridDataEquiv[i] = new boolean [_maxColumn];
 			//mark all excess cells as different
 			for (int j = 0; j < _minColumn; j++) {
-				isGridDataEquiv[i][j] = ((String) _bigGridDataRow.get(j)).equals(_smallGridDataRow.get(j)); 
+				isGridDataEquiv[i][j] = ((String) _bigGridDataRow.get(j)).equals(_smallGridDataRow.get(j));
 				isEquivalent = isEquivalent && isGridDataEquiv[i][j];
 			}
-		}	
-		
+		}
+
 		if (isEquiv != null)
 			isEquiv.setBoolean(isEquivalent);
-		
+
 		return isGridDataEquiv;
 	}
 
