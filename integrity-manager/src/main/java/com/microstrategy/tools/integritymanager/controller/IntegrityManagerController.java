@@ -83,7 +83,7 @@ public class IntegrityManagerController {
         List<String> sourceObjectIds = searchService.getTopNReportIds(sourceLibraryUrl, sourceTokenList.get(0), sourceProjectId, countInt);
         //sourceObjectIds = Arrays.asList("13CFD83A458A68655A13CBA8D7C62CD5");
         //sourceObjectIds = Arrays.asList("0A9EBE87468B751C3663818889B10D73");
-        sourceObjectIds = Arrays.asList("00DBE0954D559B4424495898537D6143");
+        //sourceObjectIds = Arrays.asList("00DBE0954D559B4424495898537D6143");
 
         List<String> targetObjectIds = new ArrayList<>(sourceObjectIds);
 

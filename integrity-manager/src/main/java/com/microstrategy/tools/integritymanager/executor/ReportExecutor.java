@@ -1,6 +1,5 @@
 package com.microstrategy.tools.integritymanager.executor;
 
-import com.google.common.base.Joiner;
 import com.microstrategy.tools.integritymanager.exception.ReportExecutionException;
 import com.microstrategy.tools.integritymanager.exception.ReportExecutorInternalException;
 import com.microstrategy.tools.integritymanager.model.bo.ReportExecutionResult;
@@ -232,13 +231,7 @@ public class ReportExecutor {
     }
 
     private <T> ResponseEntity<T> fetchReportInstanceData(String instanceId, Class<T> responseType) throws ReportExecutionException {
-        HttpHeaders headers = new HttpHeaders();
-        headers.add("X-MSTR-AuthToken", this.authToken);
-        headers.add("X-MSTR-ProjectID", this.projectId);
-        headers.addAll("Cookie", Arrays.asList(this.cookie));
-        headers.add("Content-Type", "application/json");
-        headers.add("Accept", "*/*");
-        HttpEntity<Map<String,Object>> requestEntity = new HttpEntity<>(headers);
+        HttpEntity<Map<String, Object>> requestEntity = newMapHttpEntity();
 
         String url = String.format("%s/api/v2/reports/%s/instances/%s", this.libraryUrl, this.reportId, instanceId);
 
@@ -282,13 +275,7 @@ public class ReportExecutor {
     }
 
     private ReportSqlStatement fetchReportSqlStatement(String instanceId) throws ReportExecutionException {
-        HttpHeaders headers = new HttpHeaders();
-        headers.add("X-MSTR-AuthToken", this.authToken);
-        headers.add("X-MSTR-ProjectID", this.projectId);
-        headers.addAll("Cookie", Arrays.asList(this.cookie));
-        headers.add("Content-Type", "application/json");
-        headers.add("Accept", "*/*");
-        HttpEntity<Map<String,Object>> requestEntity = new HttpEntity<>(headers);
+        HttpEntity<Map<String, Object>> requestEntity = newMapHttpEntity();
 
         String url = String.format("%s/api/v2/reports/%s/instances/%s/sqlView", this.libraryUrl, this.reportId, instanceId);
 
@@ -300,7 +287,17 @@ public class ReportExecutor {
             exception.printStackTrace();
             throw new ReportExecutionException(exception.getLocalizedMessage(), exception);
         }
+    }
 
+    private HttpEntity<Map<String, Object>> newMapHttpEntity() {
+        HttpHeaders headers = new HttpHeaders();
+        headers.add("X-MSTR-AuthToken", this.authToken);
+        headers.add("X-MSTR-ProjectID", this.projectId);
+        headers.addAll("Cookie", Arrays.asList(this.cookie));
+        headers.add("Content-Type", "application/json");
+        headers.add("Accept", "*/*");
+        HttpEntity<Map<String,Object>> requestEntity = new HttpEntity<>(headers);
+        return requestEntity;
     }
 
     protected String getReportInstanceId(String finalStr) throws ReportExecutionException {
