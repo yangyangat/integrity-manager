@@ -105,7 +105,5 @@ public class ObjectInfoExecutor {
                 System.out.println("e = " + e);
             }
         }
-
-
     }
 }
