@@ -34,11 +34,11 @@ class SummaryResultSetJson {
         summaryResultSetJson.id = executableSet.getExecutable().getID();
         summaryResultSetJson.comparisonStatus = SummaryComparisonStatusJson.build(executableSet);
         summaryResultSetJson.baseResult = SummaryResultJson.build(executableSet, executableSet.getExecutable(),
-                executableSet.getBaseExecutionResult());
+                executableSet.getBaseExecutedInfo());
         if (executableSet.getExecutables().size() == 2) {
             summaryResultSetJson.targetResult = SummaryResultJson.build(executableSet,
                     executableSet.getExecutables().get(1),
-                    executableSet.getTargetExecutionResult());
+                    executableSet.getTargetExecutedInfo());
         }
 
         return summaryResultSetJson;

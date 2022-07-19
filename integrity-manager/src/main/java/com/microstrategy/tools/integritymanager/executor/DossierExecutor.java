@@ -250,8 +250,7 @@ public class DossierExecutor {
 
         final List<String> objectIds = Arrays.asList("80FDE73E4A791F63F91F9384708FA258");
 
-        for (String objId: objectIds
-        ) {
+        for (String objId: objectIds) {
             try {
                 DossierExecutor dossierExecutor = DossierExecutor.build().setRestParams(restParams);
                 DossierExecutionResult executionResult = dossierExecutor.execute(objId, EnumSet.allOf(ExecutionResultFormat.class));

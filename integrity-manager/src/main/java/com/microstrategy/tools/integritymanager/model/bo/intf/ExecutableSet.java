@@ -19,11 +19,11 @@ public interface ExecutableSet {
 
     int getRwdSqlNodeCount();
 
-    ExecutionResult getBaseExecutionResult();
+    Executed getBaseExecutedInfo();
 
     List<Executable> getExecutables();
 
-    ExecutionResult getTargetExecutionResult();
+    Executed getTargetExecutedInfo();
 
     EnumComparisonStatus getDataComparisonStatus();
 }

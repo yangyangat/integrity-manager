@@ -4,7 +4,7 @@ import com.fasterxml.jackson.annotation.JsonProperty;
 import com.microstrategy.tools.integritymanager.constant.enums.EnumExecutionStatus;
 import com.microstrategy.tools.integritymanager.model.bo.intf.Executable;
 import com.microstrategy.tools.integritymanager.model.bo.intf.ExecutableSet;
-import com.microstrategy.tools.integritymanager.model.bo.intf.ExecutionResult;
+import com.microstrategy.tools.integritymanager.model.bo.intf.Executed;
 
 class SummaryExecutionResult {
     @JsonProperty("name")
@@ -71,7 +71,7 @@ class SummaryExecutionResult {
     long executionTime;
 
     public static SummaryExecutionResult build(ExecutableSet executableSet,
-                                               Executable executable, ExecutionResult executionResult) {
+                                               Executable executable, Executed resultInfo) {
         if (executableSet == null) {
             return null;
         }
@@ -92,29 +92,29 @@ class SummaryExecutionResult {
         summaryExecutionResult.credentionIndex = executable.getCredIndex();
         summaryExecutionResult.viewMedia = executable.getViewMedia();
 
-        EnumExecutionStatus executionStatus = calculateExecutionStatus(executableSet, executionResult);
+        EnumExecutionStatus executionStatus = calculateExecutionStatus(executableSet, resultInfo);
         summaryExecutionResult.executionStatus = executionStatus.toString();
         summaryExecutionResult.executionStatusVal = executionStatus.getType();
-        summaryExecutionResult.detailedExecutionStatus = executionResult.getDetailedExecStatus();
-        summaryExecutionResult.prevDetailedExecStatus = executionResult.getPrevDetailedStatus();
-        summaryExecutionResult.promptDetail = executionResult.getPromptAnsDetail();
-        summaryExecutionResult.rowsGenerated = executionResult.getDataRowsGenerated();
-        summaryExecutionResult.colsGenerated = executionResult.getDataColsGenerated();
-        summaryExecutionResult.reportRowPageSize = executionResult.getReportRowPageSize();
-        summaryExecutionResult.executionTime = getAverageExecutionTime(executionResult.getExecutionTime());
+        summaryExecutionResult.detailedExecutionStatus = resultInfo.getDetailedExecStatus();
+        summaryExecutionResult.prevDetailedExecStatus = resultInfo.getPrevDetailedStatus();
+        summaryExecutionResult.promptDetail = resultInfo.getPromptAnsDetail();
+        summaryExecutionResult.rowsGenerated = resultInfo.getDataRowsGenerated();
+        summaryExecutionResult.colsGenerated = resultInfo.getDataColsGenerated();
+        summaryExecutionResult.reportRowPageSize = resultInfo.getReportRowPageSize();
+        summaryExecutionResult.executionTime = getAverageExecutionTime(resultInfo.getExecutionTime());
         //summaryExecutionResult.noteFile = executionResult instanceof StoredExecutionResult
         //        ? ((StoredExecutionResult) executionResult).getNoteLocation() : "";
         summaryExecutionResult.noteFile = "";
         return summaryExecutionResult;
     }
 
-    static EnumExecutionStatus calculateExecutionStatus(ExecutableSet executableSet, ExecutionResult executionResult) {
+    static EnumExecutionStatus calculateExecutionStatus(ExecutableSet executableSet, Executed resultInfo) {
         EnumExecutionStatus executionStatus = SummaryJsonUtils.calculateExecutionStatus(executableSet);
         if (executionStatus == EnumExecutionStatus.COMPLETED) {
             return executionStatus;
         }
 
-        return executionResult.getExecutionStatus();
+        return resultInfo.getExecutionStatus();
 
 
     }
