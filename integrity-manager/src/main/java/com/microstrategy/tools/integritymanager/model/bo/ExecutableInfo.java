@@ -39,16 +39,6 @@ public class ExecutableInfo implements Executable {
     }
 
     @Override
-    public int getExecID() {
-        return execID;
-    }
-
-    @Override
-    public String getConvertedExecId() {
-        return convertedExecId;
-    }
-
-    @Override
     public String getDesc() {
         return "\n";
     }
@@ -61,11 +51,6 @@ public class ExecutableInfo implements Executable {
     @Override
     public String getModificationTime() {
         return objectInfo.getDateModified();
-    }
-
-    @Override
-    public int getCredIndex() {
-        return credIndex;
     }
 
     @Override

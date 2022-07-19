@@ -84,6 +84,7 @@ public class IntegrityManagerController {
         //sourceObjectIds = Arrays.asList("13CFD83A458A68655A13CBA8D7C62CD5");
         //sourceObjectIds = Arrays.asList("0A9EBE87468B751C3663818889B10D73");
         //sourceObjectIds = Arrays.asList("00DBE0954D559B4424495898537D6143");
+        sourceObjectIds = Arrays.asList("016CB1464A56B21D11AA589964BA98CF");
 
         List<String> targetObjectIds = new ArrayList<>(sourceObjectIds);
 
@@ -143,7 +144,7 @@ public class IntegrityManagerController {
                                     }
                                 }
                                 else {
-                                    sourceReportExecutionResult.setDetailedExecStatus(error.getLocalizedMessage());
+                                    sourceReportExecutionResult.getExecutedInfo().setDetailedExecStatus(error.getLocalizedMessage());
                                 }
                             });
 
@@ -178,7 +179,7 @@ public class IntegrityManagerController {
                                     }
                                 }
                                 else {
-                                    targetReportExecutionResult.setDetailedExecStatus(error.getLocalizedMessage());
+                                    targetReportExecutionResult.getExecutedInfo().setDetailedExecStatus(error.getLocalizedMessage());
                                 }
                             });
 

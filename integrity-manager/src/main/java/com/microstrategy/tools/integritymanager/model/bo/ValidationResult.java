@@ -3,7 +3,7 @@ package com.microstrategy.tools.integritymanager.model.bo;
 import com.microstrategy.tools.integritymanager.constant.enums.EnumComparisonStatus;
 import com.microstrategy.tools.integritymanager.model.bo.intf.Executable;
 import com.microstrategy.tools.integritymanager.model.bo.intf.ExecutableSet;
-import com.microstrategy.tools.integritymanager.model.bo.intf.ExecutionResult;
+import com.microstrategy.tools.integritymanager.model.bo.intf.Executed;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
 import lombok.Setter;
@@ -84,8 +84,8 @@ public class ValidationResult implements ExecutableSet {
     }
 
     @Override
-    public ExecutionResult getBaseExecutionResult() {
-        return sourceExecutionResult;
+    public Executed getBaseExecutedInfo() {
+        return sourceExecutionResult.getExecutedInfo();
     }
 
     @Override
@@ -94,8 +94,8 @@ public class ValidationResult implements ExecutableSet {
     }
 
     @Override
-    public ExecutionResult getTargetExecutionResult() {
-        return targetExecutionResult;
+    public Executed getTargetExecutedInfo() {
+        return targetExecutionResult.getExecutedInfo();
     }
 
 //    @Override

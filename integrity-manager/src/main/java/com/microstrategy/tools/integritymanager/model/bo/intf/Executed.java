@@ -2,7 +2,7 @@ package com.microstrategy.tools.integritymanager.model.bo.intf;
 
 import com.microstrategy.tools.integritymanager.constant.enums.EnumExecutionStatus;
 
-public interface ExecutionResult {
+public interface Executed {
     EnumExecutionStatus getExecutionStatus();
 
     String getDetailedExecStatus();
