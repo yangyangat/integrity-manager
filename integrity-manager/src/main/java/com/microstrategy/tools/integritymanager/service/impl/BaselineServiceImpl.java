@@ -2,7 +2,7 @@ package com.microstrategy.tools.integritymanager.service.impl;
 
 import com.microstrategy.tools.integritymanager.mapper.BaselineFileMapper;
 import com.microstrategy.tools.integritymanager.model.bo.ComparisonResult;
-import com.microstrategy.tools.integritymanager.model.bo.ReportExecutionResult;
+import com.microstrategy.tools.integritymanager.model.bo.ExecutionResult;
 import com.microstrategy.tools.integritymanager.model.bo.ValidataionInfo;
 import com.microstrategy.tools.integritymanager.model.bo.ValidationResult;
 import com.microstrategy.tools.integritymanager.model.entity.convertor.DataConvertor;
@@ -29,12 +29,12 @@ public class BaselineServiceImpl implements BaselineService {
     }
 
     @Override
-    public void updateSourceBaseline(String jobId, String objectId, ReportExecutionResult result) throws IOException {
+    public void updateSourceBaseline(String jobId, String objectId, ExecutionResult result) throws IOException {
         baselineFileMapper.updateSourceBaseline(jobId, objectId, result);
     }
 
     @Override
-    public void updateTargetBaseline(String jobId, String objectId, ReportExecutionResult result) throws IOException {
+    public void updateTargetBaseline(String jobId, String objectId, ExecutionResult result) throws IOException {
         baselineFileMapper.updateTargetBaseline(jobId, objectId, result);
     }
 
@@ -44,7 +44,7 @@ public class BaselineServiceImpl implements BaselineService {
     }
 
     @Override
-    public void updateComparison(String jobId, String projectId, String objectId, Object comparisonResult, ReportExecutionResult source, ReportExecutionResult target) throws IOException {
+    public void updateComparison(String jobId, String projectId, String objectId, Object comparisonResult, ExecutionResult source, ExecutionResult target) throws IOException {
         ComparisonResult result = (ComparisonResult) comparisonResult;
         //update data comparison
         List<List<Object>> sourceData = DataConvertor.restToFileSystem(source.getReport());

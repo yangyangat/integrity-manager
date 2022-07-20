@@ -1,6 +1,6 @@
 package com.microstrategy.tools.integritymanager.mapper;
 
-import com.microstrategy.tools.integritymanager.model.bo.ReportExecutionResult;
+import com.microstrategy.tools.integritymanager.model.bo.ExecutionResult;
 import com.microstrategy.tools.integritymanager.model.bo.ValidataionInfo;
 import com.microstrategy.tools.integritymanager.model.bo.ValidationResult;
 import com.microstrategy.tools.integritymanager.model.entity.filesystem.data.DataDiffHolderJson;
@@ -105,7 +105,7 @@ public class BaselineFileMapper {
         mapOfBaselineInfos.put(jobId, baselineInfo);
     }
 
-    public void updateSourceBaseline(String jobId, String objectId, ReportExecutionResult result) throws IOException {
+    public void updateSourceBaseline(String jobId, String objectId, ExecutionResult result) throws IOException {
         BaselineInfoFileSystem baselineInfo = mapOfBaselineInfos.get(jobId);
         String objectFileName = baselineInfo.getSourceObjectIdToFileName().get(objectId);
 
@@ -113,7 +113,7 @@ public class BaselineFileMapper {
         Files.writeString(Paths.get(baselineInfo.getSourceBaselinePath(), objectFileName + ".sql"), result.getSqlStatement());
     }
 
-    public void updateTargetBaseline(String jobId, String objectId, ReportExecutionResult result) throws IOException {
+    public void updateTargetBaseline(String jobId, String objectId, ExecutionResult result) throws IOException {
         BaselineInfoFileSystem baselineInfo = mapOfBaselineInfos.get(jobId);
         String objectFileName = baselineInfo.getTargetObjectIdToFileName().get(objectId);
 

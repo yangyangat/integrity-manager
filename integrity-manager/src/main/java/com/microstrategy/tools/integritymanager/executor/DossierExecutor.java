@@ -1,18 +1,13 @@
 package com.microstrategy.tools.integritymanager.executor;
 
 import com.fasterxml.jackson.databind.JsonNode;
-import com.google.common.base.Joiner;
 import com.microstrategy.tools.integritymanager.exception.ReportExecutionException;
 import com.microstrategy.tools.integritymanager.exception.ReportExecutorInternalException;
-import com.microstrategy.tools.integritymanager.model.bo.DossierData;
-import com.microstrategy.tools.integritymanager.model.bo.DossierExecutionResult;
-import com.microstrategy.tools.integritymanager.model.bo.DossierQueryDetails;
-import com.microstrategy.tools.integritymanager.model.bo.ReportExecutionResult;
-import com.microstrategy.tools.integritymanager.model.entity.mstr.ObjectInfo;
+import com.microstrategy.tools.integritymanager.model.bo.ExecutionResult;
+import com.microstrategy.tools.integritymanager.model.bo.intf.Query;
 import com.microstrategy.tools.integritymanager.model.entity.mstr.dossier.DossierDefinition;
+import com.microstrategy.tools.integritymanager.model.entity.mstr.dossier.DossierQueryDetails;
 import com.microstrategy.tools.integritymanager.model.entity.mstr.report.ExecutionResultFormat;
-import com.microstrategy.tools.integritymanager.model.entity.mstr.report.ReportInstanceStatus;
-import com.microstrategy.tools.integritymanager.model.entity.mstr.report.ReportSqlStatement;
 import com.microstrategy.tools.integritymanager.util.UrlHelper;
 import lombok.Setter;
 import lombok.experimental.Accessors;
@@ -21,7 +16,6 @@ import org.springframework.http.HttpHeaders;
 import org.springframework.http.HttpMethod;
 import org.springframework.http.ResponseEntity;
 import org.springframework.util.StringUtils;
-import org.springframework.web.client.HttpServerErrorException;
 import org.springframework.web.client.RestClientException;
 import org.springframework.web.client.RestTemplate;
 
@@ -33,7 +27,7 @@ public class DossierExecutor {
     @Accessors(chain = true)
     private RestParams restParams;
 
-    private RestTemplate restTemplate = new RestTemplate();
+    private final RestTemplate restTemplate = new RestTemplate();
 
     public static DossierExecutor build() {
         return new DossierExecutor();
@@ -41,29 +35,35 @@ public class DossierExecutor {
 
     private DossierExecutor() {}
 
-    public DossierExecutionResult execute(String dossierId, EnumSet<ExecutionResultFormat> resultFormats)
+    public ExecutionResult execute(String dossierId, EnumSet<ExecutionResultFormat> resultFormats)
             throws ReportExecutorInternalException, ReportExecutionException  {
         return this.execute(dossierId, resultFormats, 60 * 30);
     }
 
-    public DossierExecutionResult execute(String dossierId, EnumSet<ExecutionResultFormat> resultFormats, int maxWaitSecond)
+    public ExecutionResult execute(String dossierId, EnumSet<ExecutionResultFormat> resultFormats, int maxWaitSecond)
             throws ReportExecutorInternalException, ReportExecutionException  {
         String instanceId = createDossierInstanceAndAnwserPrompts(dossierId, maxWaitSecond);
 
-        DossierExecutionResult result = new DossierExecutionResult();
+        ExecutionResult result = new ExecutionResult();
+
+        // Get dossier hierarchy definition
+        DossierDefinition dossierDefinition = getDossierDefinition(dossierId, instanceId);
+        result.setHierarchyDefinition(dossierDefinition);
+
         // Get the all viz definition and data in the dossier
-        DossierData dossierDataMap = fetchDossierInstanceData(dossierId, instanceId);
-        result.setData(dossierDataMap);
+        Map<String, JsonNode> mapOfViz = fetchDossierInstanceData(dossierId, instanceId, dossierDefinition);
+        result.setMapOfViz(mapOfViz);
+
 
         if (resultFormats.contains(ExecutionResultFormat.SQL)) {
-            JsonNode queryDetails = this.fetchDossierQueryDetails(dossierId, instanceId);
-            result.setQueryDetails(queryDetails);
+            Map<String, Query> mapOfQuery = this.fetchDossierQueryDetails(dossierId, instanceId);
+            result.setMapOfQuery(mapOfQuery);
         }
 
         return result;
     }
 
-    private JsonNode fetchDossierQueryDetails(String dossierId, String instanceId)
+    private Map<String, Query> fetchDossierQueryDetails(String dossierId, String instanceId)
             throws ReportExecutionException {
         String libraryUrl = restParams.getLibraryUrl();
         HttpEntity<Map<String, Object>> requestEntity = newMapHttpEntity();
@@ -72,8 +72,9 @@ public class DossierExecutor {
                 libraryUrl, dossierId, instanceId);
 
         try {
-            ResponseEntity<JsonNode> response = restTemplate.exchange(url, HttpMethod.GET, requestEntity, JsonNode.class);
-            return response.getBody();
+            ResponseEntity<DossierQueryDetails> response = restTemplate.exchange(url, HttpMethod.GET, requestEntity, DossierQueryDetails.class);
+            DossierQueryDetails queryDetails = response.getBody();
+            return queryDetails.getMapOfQuery();
         }
         catch (RestClientException exception) {
             exception.printStackTrace();
@@ -82,15 +83,9 @@ public class DossierExecutor {
         }
     }
 
-    private DossierData fetchDossierInstanceData(String dossierId, String instanceId)
-            throws ReportExecutionException {
-        //1. get the dossier definition
-        DossierDefinition dossierDefinition = getDossierDefinition(dossierId, instanceId);
-        System.out.println(dossierDefinition);
-
-        //2. get the chapter viz map
-        //3. iterate the viz list and get the grid data for each viz
-        DossierData vizKeyGridMap = new DossierData();
+    private Map<String, JsonNode> fetchDossierInstanceData(String dossierId, String instanceId, DossierDefinition dossierDefinition) {
+        // Get the chapter viz map, and iterate the viz list and get the grid data for each viz
+        Map<String, JsonNode> vizKeyGridMap = new HashMap<>();
         dossierDefinition.getChapterVizMap().forEach((chapterKey, vizKeyList) -> {
             vizKeyList.forEach(vizKey -> {
                 try {
@@ -221,8 +216,7 @@ public class DossierExecutor {
         headers.addAll("Cookie", cookies);
         headers.add("Content-Type", "application/json");
         headers.add("Accept", "*/*");
-        HttpEntity<Map<String,Object>> requestEntity = new HttpEntity<>(headers);
-        return requestEntity;
+        return new HttpEntity<>(headers);
     }
 
     public static void main(String[] args) {
@@ -253,7 +247,7 @@ public class DossierExecutor {
         for (String objId: objectIds) {
             try {
                 DossierExecutor dossierExecutor = DossierExecutor.build().setRestParams(restParams);
-                DossierExecutionResult executionResult = dossierExecutor.execute(objId, EnumSet.allOf(ExecutionResultFormat.class));
+                ExecutionResult executionResult = dossierExecutor.execute(objId, EnumSet.allOf(ExecutionResultFormat.class));
                 System.out.println("response = " + executionResult);
             } catch (Exception e) {
                 System.out.println("e = " + e);

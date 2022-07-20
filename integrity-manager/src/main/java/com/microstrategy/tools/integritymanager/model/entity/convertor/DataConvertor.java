@@ -24,23 +24,29 @@ import java.util.stream.StreamSupport;
 
 public class DataConvertor {
 
-    public static List<List<Object>> restToFileSystem(String report) {
+    public static List<List<Object>> restToFileSystem(JsonNode reportInJson) {
+        List<List<Object>> tableData = new ArrayList<>();
+        List<String> columnHeaders = getColumnHeaders(reportInJson);
+
+        List<List<String>> rowHeaders = getRowHeaders(reportInJson);
+
+        List<List<String>> metricValues = getMetricValues(reportInJson);
+
+        tableData.add((List)columnHeaders);
+        for (int i = 0; i < rowHeaders.size(); i++) {
+            tableData.add((List)Stream.concat(rowHeaders.get(i).stream(), metricValues.get(i).stream())
+                    .collect(Collectors.toList()));
+        }
+        return tableData;
+    }
+
+    public static List<List<Object>> restToFileSystem(String reportInString) {
         ObjectMapper mapper = new ObjectMapper();
         List<List<Object>> tableData = new ArrayList<>();
         try {
-            JsonNode reportMap = mapper.readTree(report);
-            List<String> columnHeaders = getColumnHeaders(reportMap);
+            JsonNode reportMap = mapper.readTree(reportInString);
 
-            List<List<String>> rowHeaders = getRowHeaders(reportMap);
-
-            List<List<String>> metricValues = getMetricValues(reportMap);
-
-            tableData.add((List)columnHeaders);
-            for (int i = 0; i < rowHeaders.size(); i++) {
-                tableData.add((List)Stream.concat(rowHeaders.get(i).stream(), metricValues.get(i).stream())
-                        .collect(Collectors.toList()));
-            }
-            return tableData;
+            return restToFileSystem(reportMap);
         } catch (JsonProcessingException e) {
             e.printStackTrace();
             return Collections.emptyList();
