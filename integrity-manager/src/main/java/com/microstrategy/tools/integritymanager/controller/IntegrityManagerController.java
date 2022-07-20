@@ -123,28 +123,28 @@ public class IntegrityManagerController {
         List<CompletableFuture<Object>> comparisonFutures = pairList.stream()
                 .map(executionPair -> {
                     ValidationResult validationResult = new ValidationResult();
-                    ReportExecutionResult sourceReportExecutionResult = new ReportExecutionResult();
-                    sourceReportExecutionResult.setExecID(executionPair.getExecutionId());
-                    ReportExecutionResult targetReportExecutionResult = new ReportExecutionResult();
-                    targetReportExecutionResult.setExecID(executionPair.getExecutionId());
+                    ExecutionResult sourceExecutionResult = new ExecutionResult();
+                    sourceExecutionResult.setExecID(executionPair.getExecutionId());
+                    ExecutionResult targetExecutionResult = new ExecutionResult();
+                    targetExecutionResult.setExecID(executionPair.getExecutionId());
 
                     CompletableFuture<Object> sourceObjectExecution = executionService.executeAsync(sourceLibraryUrl, executionPair.getSourceToken(), sourceProjectId,
                             executionPair.getSourceObjectId(), executionPair.getSourceObjectType(),null, sourceExecutionExecutors)
                             .whenCompleteAsync((result, error) -> {
                                 if (error == null) {
                                     try {
-                                        ReportExecutionResult executionResult = (ReportExecutionResult) result;
+                                        ExecutionResult executionResult = (ExecutionResult) result;
                                         baselineService.updateSourceBaseline(jobId, executionPair.getTargetObjectId(), executionResult);
-                                        sourceReportExecutionResult.setReport(executionResult.getReport());
-                                        sourceReportExecutionResult.setSqlStatement(executionResult.getSqlStatement());
-                                        sourceReportExecutionResult.setResultFormats(executionResult.getResultFormats());
+                                        sourceExecutionResult.setReport(executionResult.getReport());
+                                        sourceExecutionResult.setSqlStatement(executionResult.getSqlStatement());
+                                        sourceExecutionResult.setResultFormats(executionResult.getResultFormats());
                                         //validationResult.setSourceExecutionResult(ReportExecutionResult.build().setReport(result));
                                     } catch (IOException e) {
                                         e.printStackTrace();
                                     }
                                 }
                                 else {
-                                    sourceReportExecutionResult.getExecutedInfo().setDetailedExecStatus(error.getLocalizedMessage());
+                                    sourceExecutionResult.getExecutedInfo().setDetailedExecStatus(error.getLocalizedMessage());
                                 }
                             });
 
@@ -152,15 +152,15 @@ public class IntegrityManagerController {
                             executionPair.getSourceObjectId(), executionPair.getSourceObjectType(),null, sourceExecutionExecutors)
                             .whenCompleteAsync((objectInfo, error) -> {
                                 if (error == null) {
-                                    sourceReportExecutionResult.setObjectInfo(objectInfo);
+                                    sourceExecutionResult.setObjectInfo(objectInfo);
                                 }
                             });
 
-                    CompletableFuture<ReportExecutionResult> sourceObjectWithObjectInfo = sourceObjectExecution.thenCombineAsync(sourceObjectInfoExecution, (u, v) -> {
+                    CompletableFuture<ExecutionResult> sourceObjectWithObjectInfo = sourceObjectExecution.thenCombineAsync(sourceObjectInfoExecution, (u, v) -> {
 //                        validationResult.setSourceExecutionResult(sourceReportExecutionResult);
-                        return sourceReportExecutionResult;
+                        return sourceExecutionResult;
                     }).whenComplete((executionResult, error) -> {
-                        validationResult.setSourceExecutionResult(sourceReportExecutionResult);
+                        validationResult.setSourceExecutionResult(sourceExecutionResult);
                     });
 
                     CompletableFuture<Object> targetObjectExecution = executionService.executeAsync(targetLibraryUrl, executionPair.getTargetToken(), targetProjectId,
@@ -168,18 +168,18 @@ public class IntegrityManagerController {
                             .whenCompleteAsync((result, error) -> {
                                 if (error == null) {
                                     try {
-                                        ReportExecutionResult executionResult = (ReportExecutionResult) result;
+                                        ExecutionResult executionResult = (ExecutionResult) result;
                                         baselineService.updateTargetBaseline(jobId, executionPair.getTargetObjectId(), executionResult);
-                                        targetReportExecutionResult.setReport(executionResult.getReport());
-                                        targetReportExecutionResult.setSqlStatement(executionResult.getSqlStatement());
-                                        targetReportExecutionResult.setResultFormats(executionResult.getResultFormats());
+                                        targetExecutionResult.setReport(executionResult.getReport());
+                                        targetExecutionResult.setSqlStatement(executionResult.getSqlStatement());
+                                        targetExecutionResult.setResultFormats(executionResult.getResultFormats());
                                         //validationResult.setTargetExecutionResult(ReportExecutionResult.build().setReport(result));
                                     } catch (IOException e) {
                                         e.printStackTrace();
                                     }
                                 }
                                 else {
-                                    targetReportExecutionResult.getExecutedInfo().setDetailedExecStatus(error.getLocalizedMessage());
+                                    targetExecutionResult.getExecutedInfo().setDetailedExecStatus(error.getLocalizedMessage());
                                 }
                             });
 
@@ -187,20 +187,21 @@ public class IntegrityManagerController {
                                     executionPair.getTargetObjectId(), executionPair.getTargetObjectType(),null, targetExecutionExecutors)
                             .whenCompleteAsync((objectInfo, error) -> {
                                 if (error == null) {
-                                    targetReportExecutionResult.setObjectInfo(objectInfo);
+                                    targetExecutionResult.setObjectInfo(objectInfo);
                                 }
                             });
 
-                    CompletableFuture<ReportExecutionResult> targetObjectWithObjectInfo = targetObjectExecution.thenCombineAsync(targetObjectInfoExecution, (u, v) -> {
-                        return targetReportExecutionResult;
+                    CompletableFuture<ExecutionResult> targetObjectWithObjectInfo = targetObjectExecution.thenCombineAsync(targetObjectInfoExecution, (u, v) -> {
+                        return targetExecutionResult;
                     }).whenComplete((executionResult, error) -> {
-                        validationResult.setTargetExecutionResult(targetReportExecutionResult);
+                        validationResult.setTargetExecutionResult(targetExecutionResult);
                     });
 
                     CompletableFuture<Object> comparison = sourceObjectWithObjectInfo.thenCombineAsync(targetObjectWithObjectInfo, (source, target) -> {
                         //return comparisonService.compareResult(source.getReport(), target.getReport());
                         return comparisonService.compareReportResult(source, target);
                     }).whenComplete((result, error) -> {
+                        ComparedInfo comparedInfo = new ComparedInfo();
                         if (error == null) {
                             comparisonService.printDifferent(result);
 
@@ -214,19 +215,20 @@ public class IntegrityManagerController {
                             ComparisonResult comparisonResult = (ComparisonResult) result;
                             EnumComparisonStatus comparisonStatus = comparisonResult.getComparisonStatus();
                             validationResult.setComparisonResult(comparisonResult);
-                            validationResult.setDataComparisonStatus(comparisonStatus);
-                            validationResult.setDataComparisonStatusForNewSummary(comparisonStatus);
+                            comparedInfo.setDataComparisonStatus(comparisonStatus);
+                            comparedInfo.setDataComparisonStatusForNewSummary(comparisonStatus);
                             if (comparisonStatus == EnumComparisonStatus.NOT_MATCHED) {
                                 //TODO, the data difference count and sql difference count need to move to the comaprison result as well.
-                                validationResult.setRwdDataDifferenceCount(1);
-                                validationResult.setRwdSqlDifferenceCount(1);
+                                comparedInfo.setRwdDataDifferenceCount(1);
+                                comparedInfo.setRwdSqlDifferenceCount(1);
                             }
                         }
                         else {
-                            validationResult.setDataComparisonStatus(EnumComparisonStatus.ERROR);
-                            validationResult.setSQLComparisonStatus(EnumComparisonStatus.ERROR);
-                            validationResult.setDataComparisonStatusForNewSummary(EnumComparisonStatus.ERROR);
+                            comparedInfo.setDataComparisonStatus(EnumComparisonStatus.ERROR);
+                            comparedInfo.setSQLComparisonStatus(EnumComparisonStatus.ERROR);
+                            comparedInfo.setDataComparisonStatusForNewSummary(EnumComparisonStatus.ERROR);
                         }
+                        validationResult.setComparedInfo(comparedInfo);
                     });
 
                     ValidationTask task = new ValidationTask()

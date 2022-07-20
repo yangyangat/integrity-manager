@@ -7,13 +7,13 @@ import com.microstrategy.tools.integritymanager.comparator.analyzers.RestDataAna
 import com.microstrategy.MSTRTester.utils.BooleanHolder;
 import com.microstrategy.tools.integritymanager.constant.enums.EnumComparisonStatus;
 import com.microstrategy.tools.integritymanager.model.bo.ComparisonResult;
-import com.microstrategy.tools.integritymanager.model.bo.ReportExecutionResult;
+import com.microstrategy.tools.integritymanager.model.bo.ExecutionResult;
 import com.microstrategy.tools.integritymanager.model.entity.convertor.DataConvertor;
 
 import java.util.List;
 
 public class ReportComparator {
-    public static Object difference(ReportExecutionResult source, ReportExecutionResult target) {
+    public static Object difference(ExecutionResult source, ExecutionResult target) {
         //TODO, redundant data format conversion here, need to optimize. The same conversion happens when persisting to local baseline files.
         List<List<Object>> sourceData = DataConvertor.restToFileSystem(source.getReport());
         List<List<Object>> targetData = DataConvertor.restToFileSystem(target.getReport());

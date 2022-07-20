@@ -4,88 +4,68 @@ import com.microstrategy.tools.integritymanager.constant.enums.EnumComparisonSta
 import com.microstrategy.tools.integritymanager.model.bo.intf.Executable;
 import com.microstrategy.tools.integritymanager.model.bo.intf.ExecutableSet;
 import com.microstrategy.tools.integritymanager.model.bo.intf.Executed;
-import lombok.Getter;
+import lombok.Data;
 import lombok.NoArgsConstructor;
-import lombok.Setter;
 import lombok.experimental.Accessors;
 
 import java.util.Arrays;
 import java.util.List;
 
+@Data
 @NoArgsConstructor
 @Accessors(chain = true)
 public class ValidationResult implements ExecutableSet {
 
-    @Setter
-    @Getter
-    private ReportExecutionResult sourceExecutionResult;
+    private ExecutionResult sourceExecutionResult;
 
-    @Setter
-    @Getter
-    private ReportExecutionResult targetExecutionResult;
+    private ExecutionResult targetExecutionResult;
 
-    @Setter
-    @Getter
     private ComparisonResult comparisonResult;
 
-    @Setter
-    @Getter
-    private EnumComparisonStatus sQLComparisonStatus = EnumComparisonStatus.NOT_COMPARED;
+    private ComparedInfo comparedInfo;
 
-    @Setter
-    @Getter
-    private EnumComparisonStatus dataComparisonStatusForNewSummary = EnumComparisonStatus.NOT_COMPARED;
-
-    @Setter
-    @Getter
-    private EnumComparisonStatus dataComparisonStatus = EnumComparisonStatus.NOT_COMPARED;
-
-    @Setter
-    @Getter
-    private int rwdDataDifferenceCount = 0;
-
-    @Setter
-    @Getter
-    private int rwdSqlDifferenceCount = 0;
-
-    @Override
-    public Executable getExecutable() {
-        return sourceExecutionResult;
+    {
+        comparedInfo = new ComparedInfo();
     }
 
-//    @Override
-//    public EnumComparisonStatus getSQLComparisonStatus() {
-//        return EnumComparisonStatus.MATCHED;
-//    }
-//
-//    @Override
-//    public EnumComparisonStatus getDataComparisonStatusForNewSummary() {
-//        return EnumComparisonStatus.MATCHED;
-//    }
+    @Override
+    public EnumComparisonStatus getSQLComparisonStatus() {
+        return comparedInfo.getSQLComparisonStatus();
+    }
 
-//    @Override
-//    public int getRwdDataDifferenceCount() {
-//        return 0;
-//    }
-//
-//    @Override
-//    public int getRwdSqlDifferenceCount() {
-//        return 0;
-//    }
+    @Override
+    public EnumComparisonStatus getDataComparisonStatusForNewSummary() {
+        return comparedInfo.getDataComparisonStatusForNewSummary();
+    }
+
+    @Override
+    public EnumComparisonStatus getDataComparisonStatus() {
+        return comparedInfo.getDataComparisonStatus();
+    }
+
+    @Override
+    public int getRwdDataDifferenceCount() {
+        return comparedInfo.getRwdDataDifferenceCount();
+    }
+
+    @Override
+    public int getRwdSqlDifferenceCount() {
+        return comparedInfo.getRwdSqlDifferenceCount();
+    }
 
     @Override
     public int getRwdDataNodeCount() {
-        return 1;
+        return comparedInfo.getRwdDataNodeCount();
     }
 
     @Override
     public int getRwdSqlNodeCount() {
-        return 1;
+        return comparedInfo.getRwdSqlNodeCount();
     }
 
     @Override
-    public Executed getBaseExecutedInfo() {
-        return sourceExecutionResult.getExecutedInfo();
+    public Executable getExecutable() {
+        return sourceExecutionResult;
     }
 
     @Override
@@ -94,12 +74,12 @@ public class ValidationResult implements ExecutableSet {
     }
 
     @Override
+    public Executed getBaseExecutedInfo() {
+        return sourceExecutionResult.getExecutedInfo();
+    }
+
+    @Override
     public Executed getTargetExecutedInfo() {
         return targetExecutionResult.getExecutedInfo();
     }
-
-//    @Override
-//    public EnumComparisonStatus getDataComparisonStatus() {
-//        return EnumComparisonStatus.MATCHED;
-//    }
 }

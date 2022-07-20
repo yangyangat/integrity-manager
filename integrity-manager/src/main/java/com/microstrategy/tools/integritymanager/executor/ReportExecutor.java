@@ -2,12 +2,11 @@ package com.microstrategy.tools.integritymanager.executor;
 
 import com.microstrategy.tools.integritymanager.exception.ReportExecutionException;
 import com.microstrategy.tools.integritymanager.exception.ReportExecutorInternalException;
-import com.microstrategy.tools.integritymanager.model.bo.ReportExecutionResult;
+import com.microstrategy.tools.integritymanager.model.bo.ExecutionResult;
 import com.microstrategy.tools.integritymanager.model.entity.mstr.report.ExecutionResultFormat;
 import com.microstrategy.tools.integritymanager.model.entity.mstr.report.ReportInstance;
 import com.microstrategy.tools.integritymanager.model.entity.mstr.report.ReportInstanceStatus;
 import com.microstrategy.tools.integritymanager.model.entity.mstr.report.ReportSqlStatement;
-import com.microstrategy.tools.integritymanager.util.UrlHelper;
 import org.apache.http.client.methods.CloseableHttpResponse;
 import org.apache.http.client.methods.HttpPost;
 import org.apache.http.entity.ByteArrayEntity;
@@ -30,7 +29,6 @@ import java.net.URL;
 import java.nio.charset.StandardCharsets;
 import java.util.Arrays;
 import java.util.EnumSet;
-import java.util.List;
 import java.util.Map;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
@@ -83,7 +81,7 @@ public class ReportExecutor {
      * @throws ReportExecutorInternalException
      * @throws ReportExecutionException
      */
-    public ReportExecutionResult execute(EnumSet resultFormats) throws ReportExecutorInternalException, ReportExecutionException {
+    public ExecutionResult execute(EnumSet resultFormats) throws ReportExecutorInternalException, ReportExecutionException {
         return execute(60 * 30, resultFormats);
     }
 
@@ -116,10 +114,10 @@ public class ReportExecutor {
      * @param maxWaitSecond Max seconds to wait before got data
      * @return The data of the report in format of ResponseEntity<T>
      */
-    public ReportExecutionResult execute(int maxWaitSecond, EnumSet resultFormats) throws ReportExecutionException, ReportExecutorInternalException {
+    public ExecutionResult execute(int maxWaitSecond, EnumSet resultFormats) throws ReportExecutionException, ReportExecutorInternalException {
         String instanceId = createReportInstanceAndAnwserPrompts(maxWaitSecond);
 
-        ReportExecutionResult result = new ReportExecutionResult();
+        ExecutionResult result = new ExecutionResult();
         // Get the report in string
         String report = fetchReportInstanceData(instanceId);
         result.setReport(report);
