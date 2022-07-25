@@ -122,6 +122,10 @@ public class SearchExecutor {
         return searchResponse;
     }
 
+    public List<String> queryTopNDossiers(int topCount) {
+        return null;
+    }
+
     public static void main(String[] args) {
         RestTemplate restTemplate = new RestTemplate();
         final String libraryUrl = "http://10.23.32.173:8080/MicroStrategyLibrary";

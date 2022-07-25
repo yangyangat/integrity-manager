@@ -90,7 +90,7 @@ public class ObjectInfoExecutor {
                 .setLibraryUrl(libraryUrl)
                 .setProjectId(projectId);
 
-        final List<String> objectIds = Arrays.asList("13CFD83A458A68655A13CBA8D7C62CD5");
+        final List<String> objectIds = Arrays.asList("80FDE73E4A791F63F91F9384708FA258");
 
         for (String objId: objectIds
         ) {

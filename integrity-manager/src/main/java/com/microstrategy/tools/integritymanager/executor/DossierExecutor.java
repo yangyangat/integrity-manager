@@ -4,6 +4,7 @@ import com.fasterxml.jackson.databind.JsonNode;
 import com.microstrategy.tools.integritymanager.exception.ReportExecutionException;
 import com.microstrategy.tools.integritymanager.exception.ReportExecutorInternalException;
 import com.microstrategy.tools.integritymanager.model.bo.ExecutionResult;
+import com.microstrategy.tools.integritymanager.model.bo.ReportExecutionResult;
 import com.microstrategy.tools.integritymanager.model.bo.intf.Query;
 import com.microstrategy.tools.integritymanager.model.entity.mstr.dossier.DossierDefinition;
 import com.microstrategy.tools.integritymanager.model.entity.mstr.dossier.DossierQueryDetails;
@@ -51,13 +52,23 @@ public class DossierExecutor {
         result.setHierarchyDefinition(dossierDefinition);
 
         // Get the all viz definition and data in the dossier
-        Map<String, JsonNode> mapOfViz = fetchDossierInstanceData(dossierId, instanceId, dossierDefinition);
-        result.setMapOfViz(mapOfViz);
-
+        Map<String, String> mapOfViz = fetchDossierInstanceData(dossierId, instanceId, dossierDefinition);
+        Map<String, ReportExecutionResult> mapOfVizResult = new HashMap<>();
+        result.setMapOfVizResult(mapOfVizResult);
+        mapOfViz.forEach((key, vizInString) -> {
+            mapOfVizResult.put(key, new ReportExecutionResult().setReport(vizInString));
+        });
 
         if (resultFormats.contains(ExecutionResultFormat.SQL)) {
             Map<String, Query> mapOfQuery = this.fetchDossierQueryDetails(dossierId, instanceId);
-            result.setMapOfQuery(mapOfQuery);
+            mapOfQuery.forEach((key, query) -> {
+                if (!mapOfVizResult.containsKey(key)) {
+                    mapOfVizResult.put(key, new ReportExecutionResult());
+                }
+                ReportExecutionResult vizResult = mapOfVizResult.get(key);
+                vizResult.setSql(query.getSql());
+                vizResult.setQueryDetails(query.getQueryDetails());
+            });
         }
 
         return result;
@@ -83,13 +94,13 @@ public class DossierExecutor {
         }
     }
 
-    private Map<String, JsonNode> fetchDossierInstanceData(String dossierId, String instanceId, DossierDefinition dossierDefinition) {
+    private Map<String, String> fetchDossierInstanceData(String dossierId, String instanceId, DossierDefinition dossierDefinition) {
         // Get the chapter viz map, and iterate the viz list and get the grid data for each viz
-        Map<String, JsonNode> vizKeyGridMap = new HashMap<>();
+        Map<String, String> vizKeyGridMap = new HashMap<>();
         dossierDefinition.getChapterVizMap().forEach((chapterKey, vizKeyList) -> {
             vizKeyList.forEach(vizKey -> {
                 try {
-                    JsonNode vizDefinitionAndData = fetchVizDefinitionAndData(dossierId, instanceId, chapterKey, vizKey);
+                    String vizDefinitionAndData = fetchVizDefinitionAndData(dossierId, instanceId, chapterKey, vizKey);
                     vizKeyGridMap.put(vizKey, vizDefinitionAndData);
                 } catch (ReportExecutionException e) {
                     e.printStackTrace();
@@ -100,7 +111,7 @@ public class DossierExecutor {
         return vizKeyGridMap;
     }
 
-    private JsonNode fetchVizDefinitionAndData(String dossierId, String instanceId, String chapterKey, String vizKey)
+    private String fetchVizDefinitionAndData(String dossierId, String instanceId, String chapterKey, String vizKey)
             throws ReportExecutionException {
         String libraryUrl = restParams.getLibraryUrl();
         HttpEntity<Map<String, Object>> requestEntity = newMapHttpEntity();
@@ -109,7 +120,7 @@ public class DossierExecutor {
                 libraryUrl, dossierId, instanceId, chapterKey, vizKey);
 
         try {
-            ResponseEntity<JsonNode> response = restTemplate.exchange(url, HttpMethod.GET, requestEntity, JsonNode.class);
+            ResponseEntity<String> response = restTemplate.exchange(url, HttpMethod.GET, requestEntity, String.class);
             return response.getBody();
         }
         catch (RestClientException exception) {

@@ -16,4 +16,12 @@ public class SearchServiceImpl implements SearchService {
                 .setAuthToken(token.getToken()).setProjectId(projectId);
         return searchExecutor.queryTopNReports(topCount);
     }
+
+    @Override
+    public List<String> getTopNDossierIds(String libraryUrl, MSTRAuthToken token, String projectId, int topCount) {
+        SearchExecutor searchExecutor = SearchExecutor.build()
+                .setLibraryUrl(libraryUrl).setCookies(token.getCookies())
+                .setAuthToken(token.getToken()).setProjectId(projectId);
+        return searchExecutor.queryTopNDossiers(topCount);
+    }
 }

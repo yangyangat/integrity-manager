@@ -1,6 +1,7 @@
 package com.microstrategy.tools.integritymanager.model.bo;
 
 import com.fasterxml.jackson.databind.JsonNode;
+import com.microstrategy.tools.integritymanager.constant.enums.EnumExecutableType;
 import com.microstrategy.tools.integritymanager.model.bo.intf.Query;
 import com.microstrategy.tools.integritymanager.model.entity.mstr.dossier.DossierDefinition;
 import com.microstrategy.tools.integritymanager.model.entity.mstr.report.ExecutionResultFormat;
@@ -15,29 +16,32 @@ import java.util.Map;
 @Data
 @NoArgsConstructor
 @Accessors(chain = true)
-public class ExecutionResult extends ExecutableInfo{
+public class ExecutionResult extends ExecutableInfo {
 
     // common information
     private EnumSet<ExecutionResultFormat> resultFormats;
 
     private ExecutedInfo executedInfo;
 
-    // for report
-    private String report;
+    private ReportExecutionResult reportExecutionResult;
 
-    private ReportInstance reportInstance;
-
-    private String sqlStatement;
-
-    // for dossier and document
-    private Map<String, JsonNode> mapOfViz;
-
-    private Map<String, Query> mapOfQuery;
+    private Map<String, ReportExecutionResult> mapOfVizResult;
 
     private DossierDefinition hierarchyDefinition; // TODO, need to unify with Document hierarchy definition
 
     {
-        report = "";
         executedInfo = new ExecutedInfo();
+    }
+
+    public void copyResult(ExecutionResult result) {
+        if (result == null)
+            return;
+        this.executedInfo = result.getExecutedInfo();
+        this.reportExecutionResult = result.getReportExecutionResult();
+        this.mapOfVizResult = result.getMapOfVizResult();
+    }
+
+    public EnumExecutableType getExecutableType() {
+        return EnumExecutableType.fromObjectTypeAndViewMedial(this.getType(), this.getViewMedia());
     }
 }
