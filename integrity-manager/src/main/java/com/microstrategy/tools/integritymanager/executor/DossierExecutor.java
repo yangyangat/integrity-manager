@@ -9,7 +9,9 @@ import com.microstrategy.tools.integritymanager.model.bo.intf.Query;
 import com.microstrategy.tools.integritymanager.model.entity.mstr.dossier.DossierDefinition;
 import com.microstrategy.tools.integritymanager.model.entity.mstr.dossier.DossierQueryDetails;
 import com.microstrategy.tools.integritymanager.model.entity.mstr.report.ExecutionResultFormat;
+import com.microstrategy.tools.integritymanager.model.entity.mstr.report.ReportInstanceStatus;
 import com.microstrategy.tools.integritymanager.util.UrlHelper;
+import com.microstrategy.webapi.EnumDSSXMLObjectTypes;
 import lombok.Setter;
 import lombok.experimental.Accessors;
 import org.springframework.http.HttpEntity;
@@ -156,11 +158,10 @@ public class DossierExecutor {
         // Create the instance
         String instanceId = createDossierInstance(dossierId);
 
-        /*
         // Check instance status
         int dossierStatus;
 
-        ReportPromptAnswerer reportPromptAnswerer = new ReportPromptAnswerer(this);
+        ReportPromptAnswerer reportPromptAnswerer = new ReportPromptAnswerer(this.restParams, dossierId, EnumDSSXMLObjectTypes.DssXmlTypeDocumentDefinition);
         while ((dossierStatus = fetchDossierInstanceStatus(dossierId, instanceId))
                 != ReportInstanceStatus.REPORT_INSTANCE_STATUS_FINISH && maxWaitSecond-- >= 0) {
             if (dossierStatus == ReportInstanceStatus.REPORT_INSTANCE_STATUS_PROMPTED) {
@@ -179,7 +180,7 @@ public class DossierExecutor {
                     String.format("Max wait time (%d)s exceeds when executing the report: %s",
                             maxWaitSecond, dossierId));
         }
-         */
+
         return instanceId;
     }
 
@@ -187,7 +188,7 @@ public class DossierExecutor {
         String libraryUrl = restParams.getLibraryUrl();
         HttpEntity<Map<String, Object>> requestEntity = newMapHttpEntity();
 
-        String url = String.format("%s/api/documents/%s/instances/status", libraryUrl, dossierId, instanceId);
+        String url = String.format("%s/api/documents/%s/instances/%s/status", libraryUrl, dossierId, instanceId);
 
         try {
             ResponseEntity<JsonNode> response = restTemplate.exchange(url, HttpMethod.GET, requestEntity, JsonNode.class);
@@ -233,7 +234,7 @@ public class DossierExecutor {
 
     public static void main(String[] args) {
         RestTemplate restTemplate = new RestTemplate();
-        final String libraryUrl = "http://10.23.34.25:8080/MicroStrategyLibrary";
+        final String libraryUrl = "http://10.27.69.70:8080/MicroStrategyLibrary";
         final String projectId = "B19DEDCC11D4E0EFC000EB9495D0F44F";
 
         Map<String, Object> postBody = new HashMap<>();
@@ -254,7 +255,7 @@ public class DossierExecutor {
                 .setLibraryUrl(libraryUrl)
                 .setProjectId(projectId);
 
-        final List<String> objectIds = Arrays.asList("80FDE73E4A791F63F91F9384708FA258");
+        final List<String> objectIds = Arrays.asList("B1C880C64E9CD42CDBB370B5B72A1F98");
 
         for (String objId: objectIds) {
             try {

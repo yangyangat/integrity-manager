@@ -6,6 +6,7 @@ import com.google.gson.reflect.TypeToken;
 import com.microstrategy.tools.integritymanager.exception.AnswerPromptException;
 import com.microstrategy.tools.integritymanager.model.entity.mstr.prompt.*;
 import com.microstrategy.tools.integritymanager.util.UrlHelper;
+import com.microstrategy.webapi.EnumDSSXMLObjectTypes;
 import org.apache.http.Header;
 import org.apache.http.client.methods.CloseableHttpResponse;
 import org.apache.http.client.methods.HttpGet;
@@ -100,15 +101,18 @@ public class ReportPromptAnswerer {
 
     private final String libraryUrl;
 
-    private final String reportId;
+    //private final String reportId = "";
+    private final String objectId;
+    private final int objectType;
     private String urlPrefix;
     private String instanceId;
 
     private CloseableHttpClient httpClient;
 
     public ReportPromptAnswerer(ReportExecutor reportExecutor) {
-        this.reportId = reportExecutor.getReportId();
+        this.objectId = reportExecutor.getReportId();
         this.libraryUrl = reportExecutor.getLibraryUrl();
+        this.objectType = EnumDSSXMLObjectTypes.DssXmlTypeReportDefinition;
 
         List<Header> headers = new ArrayList<>();
         headers.add(new BasicHeader("Accept", "*/*"));
@@ -121,14 +125,53 @@ public class ReportPromptAnswerer {
                 .build();
     }
 
-    public void answer(String reportInstanceId) throws AnswerPromptException {
+    public ReportPromptAnswerer(RestParams restParams, String objectId, int objectType) {
+        this.objectId = objectId;
+        this.libraryUrl = restParams.getLibraryUrl();
+        this.objectType = objectType;
+
+        List<Header> headers = new ArrayList<>();
+        headers.add(new BasicHeader("Accept", "*/*"));
+        headers.add(new BasicHeader("X-MSTR-ProjectID", restParams.getProjectId()));
+        headers.add(new BasicHeader("X-MSTR-AuthToken", restParams.getAuthToken()));
+        headers.add(new BasicHeader("Content-Type", "application/json"));
+        headers.add(new BasicHeader("Cookie", restParams.getCookies().get(0)));
+        httpClient = HttpClientBuilder.create()
+                .setDefaultHeaders(headers)
+                .build();
+    }
+
+    public void answer(String instanceId) throws AnswerPromptException {
+        if (objectType == EnumDSSXMLObjectTypes.DssXmlTypeReportDefinition) {
+            answerReportPrompts(instanceId);
+            return;
+        }
+        else if (objectType == EnumDSSXMLObjectTypes.DssXmlTypeDocumentDefinition) {
+            answerDossierPrompts(instanceId);
+            return;
+        }
+        assert false;
+    }
+
+    private void answerReportPrompts(String reportInstanceId) throws AnswerPromptException {
         this.instanceId = reportInstanceId;
         this.urlPrefix = UrlHelper.replaceUrl(
-                UrlHelper.replaceUrl(PATH_REPORT_INSTANCE, UrlHelper.PathNames.REPORT_ID, this.reportId),
+                UrlHelper.replaceUrl(PATH_REPORT_INSTANCE, UrlHelper.PathNames.REPORT_ID, this.objectId),
                 UrlHelper.PathNames.REPORT_INSTANCE_ID, this.instanceId);
         List<Prompt> prompts = getReportInstancePrompts();
         if (prompts == null) {
             throw new AnswerPromptException("Get null from report instance");
+        }
+        Map<String, List<PromptAnswer>> answers = preparePromptAnswer(prompts);
+        answerPrompts(prompts, answers);
+    }
+
+    private void answerDossierPrompts(String instanceId) throws AnswerPromptException {
+        this.instanceId = instanceId;
+        this.urlPrefix = String.format("documents/%s/instances/%s", objectId, instanceId);
+        List<Prompt> prompts = getReportInstancePrompts();
+        if (prompts == null) {
+            throw new AnswerPromptException("Get null from document/dossier instance");
         }
         Map<String, List<PromptAnswer>> answers = preparePromptAnswer(prompts);
         answerPrompts(prompts, answers);
