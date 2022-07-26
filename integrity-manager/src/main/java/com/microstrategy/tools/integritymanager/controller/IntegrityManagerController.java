@@ -82,11 +82,13 @@ public class IntegrityManagerController {
         List<ExecutionPair> pairList = new ArrayList<>();
 
         List<String> sourceObjectIds = searchService.getTopNReportIds(sourceLibraryUrl, sourceTokenList.get(0), sourceProjectId, countInt);
+        //sourceObjectIds = searchService.getTopNDossierIds(sourceLibraryUrl, sourceTokenList.get(0), sourceProjectId, countInt);
         //sourceObjectIds = Arrays.asList("13CFD83A458A68655A13CBA8D7C62CD5");
         //sourceObjectIds = Arrays.asList("0A9EBE87468B751C3663818889B10D73");
         //sourceObjectIds = Arrays.asList("00DBE0954D559B4424495898537D6143");
         //sourceObjectIds = Arrays.asList("016CB1464A56B21D11AA589964BA98CF");
         //sourceObjectIds = Arrays.asList("80FDE73E4A791F63F91F9384708FA258");
+        //sourceObjectIds = Arrays.asList("F44B15734DFC41B2575DBB8F6CE1D4EB", "5F4300AF4045E989B4F09FB2F3E62FF1");
         int objectType = 3;
         EnumViewMedia viewMedia = EnumViewMedia.DssViewMediaViewAnalysis;
 
@@ -164,7 +166,7 @@ public class IntegrityManagerController {
                     }).whenComplete((executionResult, error) -> {
                         validationResult.setSourceExecutionResult(sourceExecutionResult);
                         try {
-                            baselineService.updateSourceBaseline(jobId, executionPair.getTargetObjectId(), executionResult);
+                            baselineService.updateSourceBaseline(jobId, executionPair.getTargetObjectId(), sourceExecutionResult);
                         } catch (IOException e) {
                             e.printStackTrace();
                         }

@@ -143,7 +143,7 @@ public class DossierExecutor {
         }
         catch (RestClientException exception) {
             exception.printStackTrace();
-            throw new ReportExecutionException("Fail to get the dossier definition.");
+            throw new ReportExecutionException("Fail to get the dossier definition due to the following reason:\n" + exception.getLocalizedMessage(), exception);
         }
     }
 
@@ -195,7 +195,7 @@ public class DossierExecutor {
         }
         catch (RestClientException exception) {
             exception.printStackTrace();
-            throw new ReportExecutionException("Fail to get the dossier instance status.");
+            throw new ReportExecutionException("Fail to get the dossier instance status due to the following reason:\n" + exception.getLocalizedMessage(), exception);
         }
     }
 
@@ -212,7 +212,8 @@ public class DossierExecutor {
         }
         catch (RestClientException exception) {
             exception.printStackTrace();
-            throw new ReportExecutionException("Fail to create the dossier instance for the dossier: " + dossierId);
+            throw new ReportExecutionException(String.format("Fail to create the dossier instance for the dossier: %s, due to the following reason:\n%s", dossierId, exception.getLocalizedMessage())
+                    , exception);
         }
     }
 

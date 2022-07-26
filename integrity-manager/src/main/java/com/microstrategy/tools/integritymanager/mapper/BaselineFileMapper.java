@@ -1,8 +1,10 @@
 package com.microstrategy.tools.integritymanager.mapper;
 
+import com.microstrategy.next.generation.matester.models.RwdTreeStructureJson;
 import com.microstrategy.tools.integritymanager.constant.enums.EnumExecutableType;
 import com.microstrategy.tools.integritymanager.model.bo.*;
 import com.microstrategy.tools.integritymanager.model.entity.convertor.DataConvertor;
+import com.microstrategy.tools.integritymanager.model.entity.filesystem.DossierTreeStructureJson;
 import com.microstrategy.tools.integritymanager.model.entity.filesystem.data.DataDiffHolderJson;
 import com.microstrategy.tools.integritymanager.model.entity.filesystem.sql.SqlDiffHolderJson;
 import com.microstrategy.tools.integritymanager.model.entity.filesystem.sql.SqlDiffMetadataJson;
@@ -190,6 +192,7 @@ public class BaselineFileMapper {
     private void updateDocumentComparisonResult(String jobId, String objectId,
                                        ComparisonResult comparisonResult, ExecutionResult source, ExecutionResult target)
             throws IOException {
+        // Update the baselines for each node
         comparisonResult.getMapOfComparisons().forEach((key, vizComparisonResult) -> {
             try {
                 ReportExecutionResult sourceViz = source.getMapOfVizResult().get(key);
@@ -200,6 +203,14 @@ public class BaselineFileMapper {
                 throw new RuntimeException(e);
             }
         });
+
+        // Update dossier/document definition
+        // Assume the tree structures are the same between source and target. TODO
+        RwdTreeStructureJson docDefinition = DossierTreeStructureJson.buildRwdTreeStructureJson(source.getHierarchyDefinition());
+        BaselineInfoFileSystem baselineInfo = mapOfBaselineInfos.get(jobId);
+        String diffPath = baselineInfo.mapOfObjectsDiffPath.get(objectId);
+        String definitionFile = Paths.get(diffPath, "tree_structure.json").toAbsolutePath().toString();
+        FileUtil.jsonObjectToFile(docDefinition, definitionFile);
     }
 
     private void updateReportComparisonResult(String jobId, String objectId,

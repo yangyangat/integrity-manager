@@ -39,6 +39,7 @@ public class ExecutionResult extends ExecutableInfo {
         this.executedInfo = result.getExecutedInfo();
         this.reportExecutionResult = result.getReportExecutionResult();
         this.mapOfVizResult = result.getMapOfVizResult();
+        this.hierarchyDefinition = result.getHierarchyDefinition();
     }
 
     public EnumExecutableType getExecutableType() {

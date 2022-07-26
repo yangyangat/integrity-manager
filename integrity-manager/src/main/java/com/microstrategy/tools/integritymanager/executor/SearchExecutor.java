@@ -123,7 +123,27 @@ public class SearchExecutor {
     }
 
     public List<String> queryTopNDossiers(int topCount) {
-        return null;
+        HttpHeaders headers = new HttpHeaders();
+        headers.add("X-MSTR-AuthToken", this.authToken);
+        headers.add("X-MSTR-ProjectID", this.projectId);
+        headers.addAll("Cookie", this.cookies);
+        headers.add("Content-Type", "application/json");
+        headers.add("Accept", "*/*");
+        HttpEntity<Map<String,Object>> requestEntity = new HttpEntity<>(headers);
+
+        Map<String, Object> urlPrams = Map.of(
+                "limit", Integer.valueOf(topCount)
+        );
+        String urlPramsString = Joiner.on("&").withKeyValueSeparator("=").join(urlPrams);
+        String url = UrlHelper.joinUrl(libraryUrl, "api", "dossiers?" + urlPramsString);
+
+        RestTemplate restTemplate = new RestTemplate();
+        ResponseEntity<JsonNode> response = restTemplate.exchange(url, HttpMethod.GET, requestEntity, JsonNode.class);
+
+        return StreamSupport.stream(response.getBody().get("result").spliterator(), true)
+                //.filter(obj -> obj.get("subtype").asInt(0) == 768)  //Only get the normal reports
+                .map(obj -> obj.get("id").asText())
+                .collect(Collectors.toList());
     }
 
     public static void main(String[] args) {
