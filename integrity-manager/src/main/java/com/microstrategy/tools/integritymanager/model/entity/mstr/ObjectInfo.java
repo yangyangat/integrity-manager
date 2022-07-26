@@ -2,6 +2,8 @@ package com.microstrategy.tools.integritymanager.model.entity.mstr;
 
 import com.fasterxml.jackson.annotation.JsonProperty;
 import com.fasterxml.jackson.databind.JsonNode;
+import com.microstrategy.tools.integritymanager.constant.enums.EnumViewMedia;
+import com.microstrategy.webapi.EnumDSSXMLObjectTypes;
 import lombok.Data;
 import lombok.NoArgsConstructor;
 
@@ -27,4 +29,9 @@ public class ObjectInfo {
     private int viewMedia;
     private List<JsonNode> ancestors;
     private JsonNode certifiedInfo;
+
+    public boolean isDossier() {
+        return type == EnumDSSXMLObjectTypes.DssXmlTypeDocumentDefinition
+                && EnumViewMedia.isDossier(viewMedia);
+    }
 }

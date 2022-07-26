@@ -1,10 +1,8 @@
 package com.microstrategy.tools.integritymanager.service.impl;
 
+import com.microstrategy.tools.integritymanager.constant.enums.EnumExecutableType;
 import com.microstrategy.tools.integritymanager.mapper.BaselineFileMapper;
-import com.microstrategy.tools.integritymanager.model.bo.ComparisonResult;
-import com.microstrategy.tools.integritymanager.model.bo.ExecutionResult;
-import com.microstrategy.tools.integritymanager.model.bo.ValidataionInfo;
-import com.microstrategy.tools.integritymanager.model.bo.ValidationResult;
+import com.microstrategy.tools.integritymanager.model.bo.*;
 import com.microstrategy.tools.integritymanager.model.entity.convertor.DataConvertor;
 import com.microstrategy.tools.integritymanager.model.entity.filesystem.upgradeimpacts.UpgradeImpactsHolderJson;
 import com.microstrategy.tools.integritymanager.service.intf.BaselineService;
@@ -45,19 +43,9 @@ public class BaselineServiceImpl implements BaselineService {
 
     @Override
     public void updateComparison(String jobId, String projectId, String objectId, Object comparisonResult, ExecutionResult source, ExecutionResult target) throws IOException {
-        ComparisonResult result = (ComparisonResult) comparisonResult;
-        //update data comparison
-        List<List<Object>> sourceData = DataConvertor.restToFileSystem(source.getReport());
-        List<List<Object>> targetData = DataConvertor.restToFileSystem(target.getReport());
-        boolean[][] diff = result.getDiff();
-        baselineFileMapper.updateDataDiff(jobId, objectId, sourceData, targetData, diff);
-
-        //update sql comparison
-
-        //TODO, get the sql diff for both source and target
-        int sourceSqlDiff[] = result.getSourceSqlDiff();
-        int targetSqlDiff[] = result.getTargetSqlDiff();
-        baselineFileMapper.updateSqlDiff(jobId, objectId, sourceSqlDiff, targetSqlDiff);
+        if (comparisonResult instanceof ComparisonResult) {
+            baselineFileMapper.updateComparisonResult(jobId, objectId, (ComparisonResult)comparisonResult, source, target);
+        }
     }
 
     @Override

@@ -3,6 +3,7 @@ package com.microstrategy.tools.integritymanager.executor;
 import com.microstrategy.tools.integritymanager.exception.ReportExecutionException;
 import com.microstrategy.tools.integritymanager.exception.ReportExecutorInternalException;
 import com.microstrategy.tools.integritymanager.model.bo.ExecutionResult;
+import com.microstrategy.tools.integritymanager.model.bo.ReportExecutionResult;
 import com.microstrategy.tools.integritymanager.model.entity.mstr.report.ExecutionResultFormat;
 import com.microstrategy.tools.integritymanager.model.entity.mstr.report.ReportInstance;
 import com.microstrategy.tools.integritymanager.model.entity.mstr.report.ReportInstanceStatus;
@@ -117,17 +118,17 @@ public class ReportExecutor {
     public ExecutionResult execute(int maxWaitSecond, EnumSet resultFormats) throws ReportExecutionException, ReportExecutorInternalException {
         String instanceId = createReportInstanceAndAnwserPrompts(maxWaitSecond);
 
-        ExecutionResult result = new ExecutionResult();
+        ReportExecutionResult result = new ReportExecutionResult();
         // Get the report in string
         String report = fetchReportInstanceData(instanceId);
         result.setReport(report);
 
         if (resultFormats.contains(ExecutionResultFormat.SQL)) {
             ReportSqlStatement sqlStatement = this.fetchReportSqlStatement(instanceId);
-            result.setSqlStatement(sqlStatement.getSqlStatement());
+            result.setSql(sqlStatement.getSqlStatement());
         }
 
-        return result;
+        return new ExecutionResult().setReportExecutionResult(result);
     }
 
     private String createReportInstanceAndAnwserPrompts(int maxWaitSecond) throws ReportExecutorInternalException, ReportExecutionException {

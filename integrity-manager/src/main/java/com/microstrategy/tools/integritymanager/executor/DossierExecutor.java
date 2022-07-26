@@ -4,11 +4,14 @@ import com.fasterxml.jackson.databind.JsonNode;
 import com.microstrategy.tools.integritymanager.exception.ReportExecutionException;
 import com.microstrategy.tools.integritymanager.exception.ReportExecutorInternalException;
 import com.microstrategy.tools.integritymanager.model.bo.ExecutionResult;
+import com.microstrategy.tools.integritymanager.model.bo.ReportExecutionResult;
 import com.microstrategy.tools.integritymanager.model.bo.intf.Query;
 import com.microstrategy.tools.integritymanager.model.entity.mstr.dossier.DossierDefinition;
 import com.microstrategy.tools.integritymanager.model.entity.mstr.dossier.DossierQueryDetails;
 import com.microstrategy.tools.integritymanager.model.entity.mstr.report.ExecutionResultFormat;
+import com.microstrategy.tools.integritymanager.model.entity.mstr.report.ReportInstanceStatus;
 import com.microstrategy.tools.integritymanager.util.UrlHelper;
+import com.microstrategy.webapi.EnumDSSXMLObjectTypes;
 import lombok.Setter;
 import lombok.experimental.Accessors;
 import org.springframework.http.HttpEntity;
@@ -51,13 +54,23 @@ public class DossierExecutor {
         result.setHierarchyDefinition(dossierDefinition);
 
         // Get the all viz definition and data in the dossier
-        Map<String, JsonNode> mapOfViz = fetchDossierInstanceData(dossierId, instanceId, dossierDefinition);
-        result.setMapOfViz(mapOfViz);
-
+        Map<String, String> mapOfViz = fetchDossierInstanceData(dossierId, instanceId, dossierDefinition);
+        Map<String, ReportExecutionResult> mapOfVizResult = new HashMap<>();
+        result.setMapOfVizResult(mapOfVizResult);
+        mapOfViz.forEach((key, vizInString) -> {
+            mapOfVizResult.put(key, new ReportExecutionResult().setReport(vizInString));
+        });
 
         if (resultFormats.contains(ExecutionResultFormat.SQL)) {
             Map<String, Query> mapOfQuery = this.fetchDossierQueryDetails(dossierId, instanceId);
-            result.setMapOfQuery(mapOfQuery);
+            mapOfQuery.forEach((key, query) -> {
+                if (!mapOfVizResult.containsKey(key)) {
+                    mapOfVizResult.put(key, new ReportExecutionResult());
+                }
+                ReportExecutionResult vizResult = mapOfVizResult.get(key);
+                vizResult.setSql(query.getSql());
+                vizResult.setQueryDetails(query.getQueryDetails());
+            });
         }
 
         return result;
@@ -83,13 +96,13 @@ public class DossierExecutor {
         }
     }
 
-    private Map<String, JsonNode> fetchDossierInstanceData(String dossierId, String instanceId, DossierDefinition dossierDefinition) {
+    private Map<String, String> fetchDossierInstanceData(String dossierId, String instanceId, DossierDefinition dossierDefinition) {
         // Get the chapter viz map, and iterate the viz list and get the grid data for each viz
-        Map<String, JsonNode> vizKeyGridMap = new HashMap<>();
+        Map<String, String> vizKeyGridMap = new HashMap<>();
         dossierDefinition.getChapterVizMap().forEach((chapterKey, vizKeyList) -> {
             vizKeyList.forEach(vizKey -> {
                 try {
-                    JsonNode vizDefinitionAndData = fetchVizDefinitionAndData(dossierId, instanceId, chapterKey, vizKey);
+                    String vizDefinitionAndData = fetchVizDefinitionAndData(dossierId, instanceId, chapterKey, vizKey);
                     vizKeyGridMap.put(vizKey, vizDefinitionAndData);
                 } catch (ReportExecutionException e) {
                     e.printStackTrace();
@@ -100,7 +113,7 @@ public class DossierExecutor {
         return vizKeyGridMap;
     }
 
-    private JsonNode fetchVizDefinitionAndData(String dossierId, String instanceId, String chapterKey, String vizKey)
+    private String fetchVizDefinitionAndData(String dossierId, String instanceId, String chapterKey, String vizKey)
             throws ReportExecutionException {
         String libraryUrl = restParams.getLibraryUrl();
         HttpEntity<Map<String, Object>> requestEntity = newMapHttpEntity();
@@ -109,7 +122,7 @@ public class DossierExecutor {
                 libraryUrl, dossierId, instanceId, chapterKey, vizKey);
 
         try {
-            ResponseEntity<JsonNode> response = restTemplate.exchange(url, HttpMethod.GET, requestEntity, JsonNode.class);
+            ResponseEntity<String> response = restTemplate.exchange(url, HttpMethod.GET, requestEntity, String.class);
             return response.getBody();
         }
         catch (RestClientException exception) {
@@ -132,7 +145,7 @@ public class DossierExecutor {
         }
         catch (RestClientException exception) {
             exception.printStackTrace();
-            throw new ReportExecutionException("Fail to get the dossier definition.");
+            throw new ReportExecutionException("Fail to get the dossier definition due to the following reason:\n" + exception.getLocalizedMessage(), exception);
         }
     }
 
@@ -145,11 +158,10 @@ public class DossierExecutor {
         // Create the instance
         String instanceId = createDossierInstance(dossierId);
 
-        /*
         // Check instance status
         int dossierStatus;
 
-        ReportPromptAnswerer reportPromptAnswerer = new ReportPromptAnswerer(this);
+        ReportPromptAnswerer reportPromptAnswerer = new ReportPromptAnswerer(this.restParams, dossierId, EnumDSSXMLObjectTypes.DssXmlTypeDocumentDefinition);
         while ((dossierStatus = fetchDossierInstanceStatus(dossierId, instanceId))
                 != ReportInstanceStatus.REPORT_INSTANCE_STATUS_FINISH && maxWaitSecond-- >= 0) {
             if (dossierStatus == ReportInstanceStatus.REPORT_INSTANCE_STATUS_PROMPTED) {
@@ -168,7 +180,7 @@ public class DossierExecutor {
                     String.format("Max wait time (%d)s exceeds when executing the report: %s",
                             maxWaitSecond, dossierId));
         }
-         */
+
         return instanceId;
     }
 
@@ -176,7 +188,7 @@ public class DossierExecutor {
         String libraryUrl = restParams.getLibraryUrl();
         HttpEntity<Map<String, Object>> requestEntity = newMapHttpEntity();
 
-        String url = String.format("%s/api/documents/%s/instances/status", libraryUrl, dossierId, instanceId);
+        String url = String.format("%s/api/documents/%s/instances/%s/status", libraryUrl, dossierId, instanceId);
 
         try {
             ResponseEntity<JsonNode> response = restTemplate.exchange(url, HttpMethod.GET, requestEntity, JsonNode.class);
@@ -184,7 +196,7 @@ public class DossierExecutor {
         }
         catch (RestClientException exception) {
             exception.printStackTrace();
-            throw new ReportExecutionException("Fail to get the dossier instance status.");
+            throw new ReportExecutionException("Fail to get the dossier instance status due to the following reason:\n" + exception.getLocalizedMessage(), exception);
         }
     }
 
@@ -201,7 +213,8 @@ public class DossierExecutor {
         }
         catch (RestClientException exception) {
             exception.printStackTrace();
-            throw new ReportExecutionException("Fail to create the dossier instance for the dossier: " + dossierId);
+            throw new ReportExecutionException(String.format("Fail to create the dossier instance for the dossier: %s, due to the following reason:\n%s", dossierId, exception.getLocalizedMessage())
+                    , exception);
         }
     }
 
@@ -221,7 +234,7 @@ public class DossierExecutor {
 
     public static void main(String[] args) {
         RestTemplate restTemplate = new RestTemplate();
-        final String libraryUrl = "http://10.23.34.25:8080/MicroStrategyLibrary";
+        final String libraryUrl = "http://10.27.69.70:8080/MicroStrategyLibrary";
         final String projectId = "B19DEDCC11D4E0EFC000EB9495D0F44F";
 
         Map<String, Object> postBody = new HashMap<>();
@@ -242,7 +255,7 @@ public class DossierExecutor {
                 .setLibraryUrl(libraryUrl)
                 .setProjectId(projectId);
 
-        final List<String> objectIds = Arrays.asList("80FDE73E4A791F63F91F9384708FA258");
+        final List<String> objectIds = Arrays.asList("B1C880C64E9CD42CDBB370B5B72A1F98");
 
         for (String objId: objectIds) {
             try {

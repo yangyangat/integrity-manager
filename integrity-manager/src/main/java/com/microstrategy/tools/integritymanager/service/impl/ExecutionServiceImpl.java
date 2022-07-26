@@ -1,5 +1,9 @@
 package com.microstrategy.tools.integritymanager.service.impl;
 
+import com.microstrategy.tools.integritymanager.executor.DossierExecutor;
+import com.microstrategy.webapi.EnumDSSXMLObjectTypes;
+
+import com.microstrategy.tools.integritymanager.constant.enums.EnumViewMedia;
 import com.microstrategy.tools.integritymanager.exception.ReportExecutionException;
 import com.microstrategy.tools.integritymanager.exception.ReportExecutorInternalException;
 import com.microstrategy.tools.integritymanager.executor.ObjectInfoExecutor;
@@ -21,18 +25,37 @@ import java.util.concurrent.ExecutorService;
 @Service
 public class ExecutionServiceImpl implements ExecutionService {
     @Override
-    public Object execute(String libraryUrl, MSTRAuthToken token, String projectId, String objectId, int objectType, Object options)
+    public Object execute(String libraryUrl, MSTRAuthToken token, String projectId, String objectId, int objectType, EnumViewMedia viewMedia, Object options)
             throws ReportExecutorInternalException, ReportExecutionException {
-        ReportExecutor reportExecutor = ReportExecutor.build()
-                .setLibraryUrl(libraryUrl).setCookie(token.getCookies().get(0))
-                .setAuthToken(token.getToken()).setProjectId(projectId).setReportId(objectId);
+        if (objectType == EnumDSSXMLObjectTypes.DssXmlTypeReportDefinition) {
+            ReportExecutor reportExecutor = ReportExecutor.build()
+                    .setLibraryUrl(libraryUrl).setCookie(token.getCookies().get(0))
+                    .setAuthToken(token.getToken()).setProjectId(projectId).setReportId(objectId);
 
-        //TODO, read the result formats from options. Now hardcoded to all.
-        return reportExecutor.execute(EnumSet.allOf(ExecutionResultFormat.class));
+            //TODO, read the result formats from options. Now hardcoded to all.
+            return reportExecutor.execute(EnumSet.allOf(ExecutionResultFormat.class));
+        }
+        else if (objectType == EnumDSSXMLObjectTypes.DssXmlTypeDocumentDefinition) {
+            if (EnumViewMedia.isDossier(viewMedia)) {
+                RestParams restParams = new RestParams()
+                        .setAuthToken(token.getToken())
+                        .setCookies(token.getCookies())
+                        .setLibraryUrl(libraryUrl)
+                        .setProjectId(projectId);
+                DossierExecutor dossierExecutor = DossierExecutor.build().setRestParams(restParams);
+
+                //TODO, read the result formats from options. Now hardcoded to all.
+                return dossierExecutor.execute(objectId, EnumSet.allOf(ExecutionResultFormat.class));
+            }
+            else {
+                //TODO, document execution
+            }
+        }
+        return null;
     }
 
     @Override
-    public <T> ResponseEntity<T> execute(String libraryUrl, MSTRAuthToken token, String projectId, String objectId, int objectType, Object options, Class<T> responseType) throws ReportExecutorInternalException, ReportExecutionException {
+    public <T> ResponseEntity<T> execute(String libraryUrl, MSTRAuthToken token, String projectId, String objectId, int objectType, EnumViewMedia viewMedia, Object options, Class<T> responseType) throws ReportExecutorInternalException, ReportExecutionException {
         ReportExecutor reportExecutor = ReportExecutor.build()
                 .setLibraryUrl(libraryUrl).setCookie(token.getCookies().get(0))
                 .setAuthToken(token.getToken()).setProjectId(projectId).setReportId(objectId);
@@ -41,11 +64,11 @@ public class ExecutionServiceImpl implements ExecutionService {
     }
 
     @Override
-    public CompletableFuture<Object> executeAsync(String libraryUrl, MSTRAuthToken token, String projectId, String objectId, int objectType, Object options, Executor executor) {
+    public CompletableFuture<Object> executeAsync(String libraryUrl, MSTRAuthToken token, String projectId, String objectId, int objectType, EnumViewMedia viewMedia, Object options, Executor executor) {
         return CompletableFuture.supplyAsync(() -> {
             // Code to download and return the web page's content
             try {
-                return this.execute(libraryUrl, token, projectId, objectId, objectType, options);
+                return this.execute(libraryUrl, token, projectId, objectId, objectType, viewMedia, options);
             } catch (Exception e) {
                 //e.printStackTrace();
                 throw new IllegalStateException(e);
@@ -62,16 +85,16 @@ public class ExecutionServiceImpl implements ExecutionService {
     }
 
     @Override
-    public <T> CompletableFuture<T> executeAsync(String libraryUrl, MSTRAuthToken token, String projectId, String objectId, int objectType, Object options, Executor executor, Class<T> responseType) {
+    public <T> CompletableFuture<T> executeAsync(String libraryUrl, MSTRAuthToken token, String projectId, String objectId, int objectType, EnumViewMedia viewMedia, Object options, Executor executor, Class<T> responseType) {
         return CompletableFuture.supplyAsync(() -> {
             try {
-                ResponseEntity<T> reportResponse = this.execute(libraryUrl, token, projectId, objectId, objectType, options, responseType);
+                ResponseEntity<T> reportResponse = this.execute(libraryUrl, token, projectId, objectId, objectType, viewMedia, options, responseType);
                 return reportResponse.getBody();
             } catch (Exception e) {
                 //e.printStackTrace();
                 throw new IllegalStateException(e);
             }
-        }, executor).whenComplete((u, v)->{
+        }, executor).whenComplete((u, v) -> {
             if (v == null) {
                 System.out.println("Report : " + objectId + " result returned!");
             }
