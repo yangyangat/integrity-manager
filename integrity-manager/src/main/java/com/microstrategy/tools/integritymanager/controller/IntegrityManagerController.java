@@ -1,5 +1,7 @@
 package com.microstrategy.tools.integritymanager.controller;
 
+import com.fasterxml.jackson.databind.JsonNode;
+import com.fasterxml.jackson.databind.node.ArrayNode;
 import com.microstrategy.tools.integritymanager.constant.enums.EnumComparisonStatus;
 import com.microstrategy.tools.integritymanager.constant.enums.EnumViewMedia;
 import com.microstrategy.tools.integritymanager.model.bo.*;
@@ -7,6 +9,7 @@ import com.microstrategy.tools.integritymanager.model.entity.filesystem.upgradei
 import com.microstrategy.tools.integritymanager.model.entity.mstr.MSTRAuthToken;
 import com.microstrategy.tools.integritymanager.model.entity.mstr.ObjectInfo;
 import com.microstrategy.tools.integritymanager.service.intf.*;
+import com.microstrategy.webapi.EnumDSSXMLObjectTypes;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
@@ -24,6 +27,7 @@ import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 import java.util.stream.Collectors;
+import java.util.stream.StreamSupport;
 
 @Controller
 public class IntegrityManagerController {
@@ -54,7 +58,9 @@ public class IntegrityManagerController {
 
     @PostMapping(value = "/comparison")
     @ResponseBody
-    public ResponseEntity compare(@RequestParam Optional<Integer> count) {
+    public ResponseEntity compare(@RequestParam Optional<Integer> count,
+                                  @RequestParam Optional<Integer> type,
+                                  @RequestBody Optional<JsonNode> requestBody) {
         int countInt = count.orElse(0);
         if (countInt <= 0 && countInt != -1) {
             return new ResponseEntity("Count parameter is expected to be larger than zero", HttpStatus.BAD_REQUEST);
@@ -81,7 +87,19 @@ public class IntegrityManagerController {
 
         List<ExecutionPair> pairList = new ArrayList<>();
 
-        List<String> sourceObjectIds = searchService.getTopNReportIds(sourceLibraryUrl, sourceTokenList.get(0), sourceProjectId, countInt);
+        int objectType = type.orElse(3);
+        EnumViewMedia viewMedia = EnumViewMedia.DssViewMediaViewAnalysis;
+        List<String> sourceObjectIds = new ArrayList<>();
+        if (requestBody.isEmpty()) {
+            if (objectType == EnumDSSXMLObjectTypes.DssXmlTypeReportDefinition)
+                sourceObjectIds = searchService.getTopNReportIds(sourceLibraryUrl, sourceTokenList.get(0), sourceProjectId, countInt);
+            else if (objectType == EnumDSSXMLObjectTypes.DssXmlTypeDocumentDefinition)
+                sourceObjectIds = searchService.getTopNDossierIds(sourceLibraryUrl, sourceTokenList.get(0), sourceProjectId, countInt);
+        }
+        else {
+            ArrayNode objectIds = (ArrayNode) requestBody.get().get("objectIds");
+            sourceObjectIds = StreamSupport.stream(objectIds.spliterator(), true).map(JsonNode::asText).collect(Collectors.toList());
+        }
         //sourceObjectIds = searchService.getTopNDossierIds(sourceLibraryUrl, sourceTokenList.get(0), sourceProjectId, countInt);
         //sourceObjectIds = Arrays.asList("13CFD83A458A68655A13CBA8D7C62CD5");
         //sourceObjectIds = Arrays.asList("0A9EBE87468B751C3663818889B10D73");
@@ -89,8 +107,6 @@ public class IntegrityManagerController {
         //sourceObjectIds = Arrays.asList("016CB1464A56B21D11AA589964BA98CF");
         //sourceObjectIds = Arrays.asList("80FDE73E4A791F63F91F9384708FA258");
         //sourceObjectIds = Arrays.asList("F44B15734DFC41B2575DBB8F6CE1D4EB", "5F4300AF4045E989B4F09FB2F3E62FF1");
-        int objectType = 3;
-        EnumViewMedia viewMedia = EnumViewMedia.DssViewMediaViewAnalysis;
 
         List<String> targetObjectIds = new ArrayList<>(sourceObjectIds);
 

@@ -22,7 +22,16 @@ import org.springframework.util.StringUtils;
 import org.springframework.web.client.RestClientException;
 import org.springframework.web.client.RestTemplate;
 
-import java.util.*;
+import java.io.IOException;
+import java.nio.file.Files;
+import java.nio.file.Path;
+import java.nio.file.Paths;
+import java.util.Arrays;
+import java.util.Base64;
+import java.util.EnumSet;
+import java.util.HashMap;
+import java.util.List;
+import java.util.Map;
 
 @Accessors(chain = true)
 public class DossierExecutor {
@@ -48,6 +57,8 @@ public class DossierExecutor {
         String instanceId = createDossierInstanceAndAnwserPrompts(dossierId, maxWaitSecond);
 
         ExecutionResult result = new ExecutionResult();
+        EnumSet<ExecutionResultFormat> actualResultFormats = EnumSet.noneOf(ExecutionResultFormat.class);
+        result.setResultFormats(actualResultFormats);
 
         // Get dossier hierarchy definition
         DossierDefinition dossierDefinition = getDossierDefinition(dossierId, instanceId);
@@ -57,6 +68,7 @@ public class DossierExecutor {
         Map<String, String> mapOfViz = fetchDossierInstanceData(dossierId, instanceId, dossierDefinition);
         Map<String, ReportExecutionResult> mapOfVizResult = new HashMap<>();
         result.setMapOfVizResult(mapOfVizResult);
+        actualResultFormats.add(ExecutionResultFormat.DATA);
         mapOfViz.forEach((key, vizInString) -> {
             mapOfVizResult.put(key, new ReportExecutionResult().setReport(vizInString));
         });
@@ -71,6 +83,19 @@ public class DossierExecutor {
                 vizResult.setSql(query.getSql());
                 vizResult.setQueryDetails(query.getQueryDetails());
             });
+            actualResultFormats.add(ExecutionResultFormat.SQL);
+        }
+
+        if (resultFormats.contains(ExecutionResultFormat.PDF)) {
+            String pdfInString = this.exportDossierToPdf(dossierId, instanceId);
+            result.setPdfInString(pdfInString);
+            actualResultFormats.add(ExecutionResultFormat.PDF);
+        }
+
+        if (resultFormats.contains(ExecutionResultFormat.EXCEL)) {
+            byte[] excelInByte = this.exportDossierToExcel(dossierId, instanceId);
+            result.setExcelInByte(excelInByte);
+            actualResultFormats.add(ExecutionResultFormat.EXCEL);
         }
 
         return result;
@@ -218,6 +243,45 @@ public class DossierExecutor {
         }
     }
 
+    private String exportDossierToPdf(String dossierId, String instanceId)
+            throws ReportExecutionException {
+        String libraryUrl = restParams.getLibraryUrl();
+        HttpEntity<Map<String, Object>> requestEntity = newMapHttpEntity();
+
+        String url = String.format("%s/api/documents/%s/instances/%s/pdf",
+                libraryUrl, dossierId, instanceId);
+
+        try {
+            ResponseEntity<JsonNode> response = restTemplate.exchange(url, HttpMethod.POST, requestEntity, JsonNode.class);
+            JsonNode responseBody = response.getBody();
+            return responseBody.get("data").asText();
+        }
+        catch (RestClientException exception) {
+            exception.printStackTrace();
+            throw new ReportExecutionException(String.format("Fail to export the dossier to PDF:\ndossier id: %s\ninstance id: %s\n",
+                    dossierId, instanceId));
+        }
+    }
+
+    private byte[] exportDossierToExcel(String dossierId, String instanceId)
+            throws ReportExecutionException {
+        String libraryUrl = restParams.getLibraryUrl();
+        HttpEntity<Map<String, Object>> requestEntity = newMapHttpEntity();
+
+        String url = String.format("%s/api/documents/%s/instances/%s/excel",
+                libraryUrl, dossierId, instanceId);
+
+        try {
+            ResponseEntity<byte[]> response = restTemplate.exchange(url, HttpMethod.POST, requestEntity, byte[].class);
+            return response.getBody();
+        }
+        catch (RestClientException exception) {
+            exception.printStackTrace();
+            throw new ReportExecutionException(String.format("Fail to export the dossier to Excel:\ndossier id: %s\ninstance id: %s\n",
+                    dossierId, instanceId));
+        }
+    }
+
     private HttpEntity<Map<String, Object>> newMapHttpEntity() {
         String authToken = restParams.getAuthToken();
         List<String> cookies = restParams.getCookies();
@@ -230,6 +294,23 @@ public class DossierExecutor {
         headers.add("Content-Type", "application/json");
         headers.add("Accept", "*/*");
         return new HttpEntity<>(headers);
+    }
+
+    private static void downloadPdf(ExecutionResult executionResult) throws IOException {
+        String pdfInString = executionResult.getPdfInString();
+        byte[] decodedBytes = Base64.getDecoder().decode(pdfInString);
+        String home = System.getProperty("user.home");
+        Path filePath = Paths.get(home, "Downloads", executionResult.getHierarchyDefinition().getName() + ".pdf");
+        Files.write(filePath, decodedBytes);
+        System.out.print("Download successfully in your Download folder");
+    }
+
+    private static void downloadExcel(ExecutionResult executionResult) throws IOException {
+        byte[] excelInByte = executionResult.getExcelInByte();
+        String home = System.getProperty("user.home");
+        Path filePath = Paths.get(home, "Downloads", executionResult.getHierarchyDefinition().getName() + ".xlsx");
+        Files.write(filePath, excelInByte);
+        System.out.print("Download successfully in your Download folder");
     }
 
     public static void main(String[] args) {
@@ -255,14 +336,18 @@ public class DossierExecutor {
                 .setLibraryUrl(libraryUrl)
                 .setProjectId(projectId);
 
-        final List<String> objectIds = Arrays.asList("B1C880C64E9CD42CDBB370B5B72A1F98");
+        final List<String> objectIds = Arrays.asList(//"B1C880C64E9CD42CDBB370B5B72A1F98",
+                                                    "80FDE73E4A791F63F91F9384708FA258");
 
         for (String objId: objectIds) {
             try {
                 DossierExecutor dossierExecutor = DossierExecutor.build().setRestParams(restParams);
                 ExecutionResult executionResult = dossierExecutor.execute(objId, EnumSet.allOf(ExecutionResultFormat.class));
+                downloadPdf(executionResult);
+                downloadExcel(executionResult);
                 System.out.println("response = " + executionResult);
             } catch (Exception e) {
+                e.printStackTrace();
                 System.out.println("e = " + e);
             }
         }

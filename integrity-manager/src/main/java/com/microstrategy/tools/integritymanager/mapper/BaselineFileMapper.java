@@ -116,7 +116,13 @@ public class BaselineFileMapper {
         if (type == EnumExecutableType.ExecutableTypeReport) {
             ReportExecutionResult reportResult = result.getReportExecutionResult();
             Files.writeString(Paths.get(baselineInfo.getSourceBaselinePath(), objectFileName + ".json"), reportResult.getReport());
-            Files.writeString(Paths.get(baselineInfo.getSourceBaselinePath(), objectFileName + ".sql"), reportResult.getSql());
+            if (StringUtils.hasLength(reportResult.getSql())) {
+                Files.writeString(Paths.get(baselineInfo.getSourceBaselinePath(), objectFileName + ".sql"), reportResult.getSql());
+            }
+            if (StringUtils.hasLength(result.getPdfInString())) {
+                byte[] decodedBytes = Base64.getDecoder().decode(result.getPdfInString());
+                Files.write(Paths.get(baselineInfo.getSourceBaselinePath(), objectFileName + ".pdf"), decodedBytes);
+            }
         }
         else if (type == EnumExecutableType.ExecutableTypeDossier) {
             Path resultPath = Paths.get(baselineInfo.getSourceBaselinePath(), objectFileName);
@@ -130,22 +136,8 @@ public class BaselineFileMapper {
         }
     }
 
-    private void saveDossierExecutionResult(ExecutionResult result, Path resultPath) {
-//        result.getMapOfViz().forEach((key, viz) -> {
-//            try {
-//                Files.writeString(Paths.get(resultPath.toString(), key + ".json"), viz.toString());
-//            } catch (IOException e) {
-//                throw new RuntimeException(e);
-//            }
-//        });
-//        result.getMapOfQuery().forEach((key, query) -> {
-//            try {
-//                Files.writeString(Paths.get(resultPath.toString(), key + ".sql"), query.getSql());
-//            } catch (IOException e) {
-//                throw new RuntimeException(e);
-//            }
-//        });
-
+    private void saveDossierExecutionResult(ExecutionResult result, Path resultPath) throws IOException {
+        // Save data & definition and sql of each noode
         result.getMapOfVizResult().forEach((key, vizResult) -> {
             try {
                 Files.writeString(Paths.get(resultPath.toString(), key + ".json"), vizResult.toString());
@@ -154,6 +146,18 @@ public class BaselineFileMapper {
                 throw new RuntimeException(e);
             }
         });
+
+        // Save PDF result
+        if (StringUtils.hasLength(result.getPdfInString())) {
+            byte[] decodedBytes = Base64.getDecoder().decode(result.getPdfInString());
+            Files.write(Paths.get(resultPath.toString() + ".pdf"), decodedBytes);
+        }
+
+        // Save Excel result
+        byte[] excelInByte = result.getExcelInByte();
+        if (excelInByte != null && excelInByte.length > 0) {
+            Files.write(Paths.get(resultPath.toString() + ".xlsx"), excelInByte);
+        }
     }
 
     public void updateTargetBaseline(String jobId, String objectId, ExecutionResult result) throws IOException {

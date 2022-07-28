@@ -29,6 +29,10 @@ public class ExecutionResult extends ExecutableInfo {
 
     private DossierDefinition hierarchyDefinition; // TODO, need to unify with Document hierarchy definition
 
+    private String pdfInString;
+
+    private byte[] excelInByte;
+
     {
         executedInfo = new ExecutedInfo();
     }
@@ -40,6 +44,8 @@ public class ExecutionResult extends ExecutableInfo {
         this.reportExecutionResult = result.getReportExecutionResult();
         this.mapOfVizResult = result.getMapOfVizResult();
         this.hierarchyDefinition = result.getHierarchyDefinition();
+        this.pdfInString = result.getPdfInString();
+        this.excelInByte = result.getExcelInByte();
     }
 
     public EnumExecutableType getExecutableType() {
