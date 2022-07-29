@@ -7,15 +7,20 @@ import com.fasterxml.jackson.databind.node.ArrayNode;
 import com.microstrategy.tools.integritymanager.exception.ReportExecutionException;
 import com.microstrategy.tools.integritymanager.exception.ReportExecutorInternalException;
 import com.microstrategy.tools.integritymanager.executor.ReportExecutor;
+import com.opencsv.CSVReader;
+import com.opencsv.exceptions.CsvValidationException;
 import org.apache.http.client.methods.CloseableHttpResponse;
 import org.apache.http.client.methods.HttpPost;
 import org.apache.http.entity.ByteArrayEntity;
 import org.apache.http.impl.client.CloseableHttpClient;
 import org.apache.http.impl.client.HttpClients;
 
+import java.io.ByteArrayInputStream;
 import java.io.IOException;
+import java.io.InputStreamReader;
 import java.nio.charset.StandardCharsets;
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.Collections;
 import java.util.List;
 import java.util.stream.Collectors;
@@ -177,5 +182,23 @@ public class DataConvertor {
             //e.printStackTrace();
         }
 
+    }
+
+    public static List<List<Object>> csvToFileSystem(byte[] gridDataInByte) {
+        List<List<Object>> records = null;
+        try (CSVReader csvReader = new CSVReader(
+                new InputStreamReader(new ByteArrayInputStream(gridDataInByte), StandardCharsets.UTF_16LE)
+        );) {
+            records = new ArrayList<>();
+            String[] values = null;
+            while ((values = csvReader.readNext()) != null) {
+                records.add(Arrays.asList(values));
+            }
+        } catch (IOException e) {
+            e.printStackTrace();
+        } catch (CsvValidationException e) {
+            e.printStackTrace();
+        }
+        return records;
     }
 }

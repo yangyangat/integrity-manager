@@ -66,6 +66,13 @@
             <version>31.0.1-jre</version>
         </dependency>
         <dependency>
+            <groupId>com.opencsv</groupId>
+            <artifactId>opencsv</artifactId>
+            <version>5.6</version>
+        </dependency>
+
+        <!-- MSTR Web SDK components -->
+        <dependency>
             <groupId>com.microstrategy.m2021</groupId>
             <artifactId>MATester</artifactId>
             <version>11.3.0730.00005</version>
