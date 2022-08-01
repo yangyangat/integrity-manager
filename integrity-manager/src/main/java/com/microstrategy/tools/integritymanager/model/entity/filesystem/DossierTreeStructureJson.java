@@ -1,6 +1,7 @@
 package com.microstrategy.tools.integritymanager.model.entity.filesystem;
 
 import com.microstrategy.next.generation.matester.models.RwdTreeStructureJson;
+import com.microstrategy.tools.integritymanager.model.entity.mstr.document.DocumentQueryDetails;
 import com.microstrategy.tools.integritymanager.model.entity.mstr.dossier.DossierChapter;
 import com.microstrategy.tools.integritymanager.model.entity.mstr.dossier.DossierDefinition;
 import com.microstrategy.tools.integritymanager.model.entity.mstr.dossier.DossierPage;

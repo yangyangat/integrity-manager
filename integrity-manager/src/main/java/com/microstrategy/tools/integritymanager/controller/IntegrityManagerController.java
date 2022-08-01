@@ -60,6 +60,7 @@ public class IntegrityManagerController {
     @ResponseBody
     public ResponseEntity compare(@RequestParam Optional<Integer> count,
                                   @RequestParam Optional<Integer> type,
+                                  @RequestParam Optional<Integer> viewMedia,
                                   @RequestBody Optional<JsonNode> requestBody) {
         int countInt = count.orElse(0);
         if (countInt <= 0 && countInt != -1) {
@@ -88,7 +89,9 @@ public class IntegrityManagerController {
         List<ExecutionPair> pairList = new ArrayList<>();
 
         int objectType = type.orElse(3);
-        EnumViewMedia viewMedia = EnumViewMedia.DssViewMediaViewAnalysis;
+        EnumViewMedia viewMediaType = EnumViewMedia.fromValue(
+                viewMedia.orElse(EnumViewMedia.DssViewMediaViewAnalysis.getValue())
+        );
         List<String> sourceObjectIds = new ArrayList<>();
         if (requestBody.isEmpty()) {
             if (objectType == EnumDSSXMLObjectTypes.DssXmlTypeReportDefinition)
@@ -116,11 +119,11 @@ public class IntegrityManagerController {
             ExecutionPair executionPair = new ExecutionPair()
                                         .setSourceObjectId(sourceObjectIds.get(i))
                                         .setSourceObjectType(objectType)
-                                        .setSourceViewMedia(viewMedia)
+                                        .setSourceViewMedia(viewMediaType)
                                         .setSourceToken(sourceTokenList.get(i % sourceTokenList.size()))
                                         .setTargetObjectId(targetObjectIds.get(i))
                                         .setTargetObjectType(objectType)
-                                        .setTargetViewMedia(viewMedia)
+                                        .setTargetViewMedia(viewMediaType)
                                         .setTargetToken(targetTokenList.get(i % targetTokenList.size()))
                                         .setExecutionId(i + 1);
 
@@ -230,9 +233,6 @@ public class IntegrityManagerController {
                     }).whenComplete((result, error) -> {
                         ComparedInfo comparedInfo = new ComparedInfo();
                         if (error == null) {
-                            comparisonService.printDifferent(result);
-
-                            //TODO, update result model and persist baseline
                             try {
                                 baselineService.updateComparison(jobId, sourceProjectId, executionPair.getSourceObjectId(), result,
                                         sourceObjectWithObjectInfo.getNow(null), targetObjectWithObjectInfo.getNow(null));

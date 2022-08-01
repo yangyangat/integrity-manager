@@ -23,8 +23,10 @@ public class ReportComparator {
 
     public static ReportComparisonResult difference(ReportExecutionResult source, ReportExecutionResult target) {
         //TODO, redundant data format conversion here, need to optimize. The same conversion happens when persisting to local baseline files.
-        List<List<Object>> sourceData = DataConvertor.restToFileSystem(source.getReport());
-        List<List<Object>> targetData = DataConvertor.restToFileSystem(target.getReport());
+//        List<List<Object>> sourceData = DataConvertor.restToFileSystem(source.getReport());
+//        List<List<Object>> targetData = DataConvertor.restToFileSystem(target.getReport());
+        List<List<Object>> sourceData = source.getGridData();
+        List<List<Object>> targetData = target.getGridData();
 
         //TODO 2, need to take different format into consideration here. The format info is already in ReportExecutionResult instance.
 

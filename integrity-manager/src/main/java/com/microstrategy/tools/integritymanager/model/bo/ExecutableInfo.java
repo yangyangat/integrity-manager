@@ -5,6 +5,8 @@ import com.microstrategy.tools.integritymanager.model.entity.mstr.ObjectInfo;
 import lombok.Data;
 import lombok.experimental.Accessors;
 
+import java.util.stream.Collectors;
+
 @Data
 @Accessors(chain = true)
 public class ExecutableInfo implements Executable {
@@ -30,8 +32,10 @@ public class ExecutableInfo implements Executable {
 
     @Override
     public String getPath() {
-        return "";
-    } //TODO
+        return objectInfo.getAncestors().stream()
+                .map(node -> node.get("name").asText())
+                .collect(Collectors.joining("\\"));
+    }
 
     @Override
     public int getSubType() {

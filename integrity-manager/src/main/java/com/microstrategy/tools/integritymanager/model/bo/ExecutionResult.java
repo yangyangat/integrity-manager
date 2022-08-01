@@ -47,6 +47,7 @@ public class ExecutionResult extends ExecutableInfo {
         this.reportExecutionResult = result.getReportExecutionResult();
         this.mapOfVizResult = result.getMapOfVizResult();
         this.hierarchyDefinition = result.getHierarchyDefinition();
+        this.documentDefinition = result.getDocumentDefinition();
         this.pdfInString = result.getPdfInString();
         this.excelInByte = result.getExcelInByte();
     }

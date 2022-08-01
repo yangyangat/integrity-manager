@@ -23,7 +23,7 @@ public class DocumentComparator {
 
         //TODO 2. get the common viz node
 
-        //temp solution here, assuming node keys are exactly the same between source and target
+        // A temp simplified solution here, assuming node keys are exactly the same between source and target
         Set<String> keys = source.getMapOfVizResult().keySet();
 
         Map<String, ReportComparisonResult> mapOfComparisons = new HashMap<>();

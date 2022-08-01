@@ -4,6 +4,7 @@ import com.microstrategy.next.generation.matester.models.RwdTreeStructureJson;
 import com.microstrategy.tools.integritymanager.constant.enums.EnumExecutableType;
 import com.microstrategy.tools.integritymanager.model.bo.*;
 import com.microstrategy.tools.integritymanager.model.entity.convertor.DataConvertor;
+import com.microstrategy.tools.integritymanager.model.entity.filesystem.DocumentTreeStructureJson;
 import com.microstrategy.tools.integritymanager.model.entity.filesystem.DossierTreeStructureJson;
 import com.microstrategy.tools.integritymanager.model.entity.filesystem.data.DataDiffHolderJson;
 import com.microstrategy.tools.integritymanager.model.entity.filesystem.sql.SqlDiffHolderJson;
@@ -20,6 +21,7 @@ import org.springframework.util.StringUtils;
 import java.io.IOException;
 import java.net.URI;
 import java.net.URISyntaxException;
+import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
@@ -124,23 +126,27 @@ public class BaselineFileMapper {
                 Files.write(Paths.get(baselineInfo.getSourceBaselinePath(), objectFileName + ".pdf"), decodedBytes);
             }
         }
-        else if (type == EnumExecutableType.ExecutableTypeDossier) {
+        else if (type == EnumExecutableType.ExecutableTypeDossier
+                || type == EnumExecutableType.ExecutableTypeDocument) {
             Path resultPath = Paths.get(baselineInfo.getSourceBaselinePath(), objectFileName);
             if (!Files.exists(resultPath)) {
                 Files.createDirectory(resultPath);
             }
             saveDossierExecutionResult(result, resultPath);
         }
-        else if (type == EnumExecutableType.ExecutableTypeDocument) {
-            //TODO
-        }
     }
 
+    // Support both Dossier and Document
     private void saveDossierExecutionResult(ExecutionResult result, Path resultPath) throws IOException {
         // Save data & definition and sql of each noode
         result.getMapOfVizResult().forEach((key, vizResult) -> {
             try {
-                Files.writeString(Paths.get(resultPath.toString(), key + ".json"), vizResult.toString());
+                if (StringUtils.hasLength(vizResult.getReport())) {
+                    Files.writeString(Paths.get(resultPath.toString(), key + ".json"), vizResult.getReport());
+                }
+                else if (vizResult.getGridDataInCSV() != null) {
+                    Files.write(Paths.get(resultPath.toString(), key + ".csv"), vizResult.getGridDataInCSV());
+                }
                 Files.writeString(Paths.get(resultPath.toString(), key + ".sql"), vizResult.getSql());
             } catch (IOException e) {
                 throw new RuntimeException(e);
@@ -170,15 +176,13 @@ public class BaselineFileMapper {
             Files.writeString(Paths.get(baselineInfo.getTargetBaselinePath(), objectFileName + ".json"), reportResult.getReport());
             Files.writeString(Paths.get(baselineInfo.getTargetBaselinePath(), objectFileName + ".sql"), reportResult.getSql());
         }
-        else if (type == EnumExecutableType.ExecutableTypeDossier) {
+        else if (type == EnumExecutableType.ExecutableTypeDossier
+                || type == EnumExecutableType.ExecutableTypeDocument) {
             Path resultPath = Paths.get(baselineInfo.getTargetBaselinePath(), objectFileName);
             if (!Files.exists(resultPath)) {
                 Files.createDirectory(resultPath);
             }
             saveDossierExecutionResult(result, resultPath);
-        }
-        else if (type == EnumExecutableType.ExecutableTypeDocument) {
-            //TODO
         }
     }
 
@@ -188,7 +192,8 @@ public class BaselineFileMapper {
         if (comparisonResult.getExecutableType() == EnumExecutableType.ExecutableTypeReport) {
             updateReportComparisonResult(jobId, objectId, comparisonResult, source, target);
         }
-        else if (comparisonResult.getExecutableType() == EnumExecutableType.ExecutableTypeDossier) {
+        else if (comparisonResult.getExecutableType() == EnumExecutableType.ExecutableTypeDossier
+                || comparisonResult.getExecutableType() == EnumExecutableType.ExecutableTypeDocument) {
             updateDocumentComparisonResult(jobId, objectId, comparisonResult, source, target);
         }
     }
@@ -210,7 +215,10 @@ public class BaselineFileMapper {
 
         // Update dossier/document definition
         // Assume the tree structures are the same between source and target. TODO
-        RwdTreeStructureJson docDefinition = DossierTreeStructureJson.buildRwdTreeStructureJson(source.getHierarchyDefinition());
+        EnumExecutableType executableType = comparisonResult.getExecutableType();
+        RwdTreeStructureJson docDefinition = executableType == EnumExecutableType.ExecutableTypeDossier
+                ? DossierTreeStructureJson.buildRwdTreeStructureJson(source.getHierarchyDefinition())
+                : DocumentTreeStructureJson.buildRwdTreeStructureJson(source.getDocumentDefinition(), source) ;
         BaselineInfoFileSystem baselineInfo = mapOfBaselineInfos.get(jobId);
         String diffPath = baselineInfo.mapOfObjectsDiffPath.get(objectId);
         String definitionFile = Paths.get(diffPath, "tree_structure.json").toAbsolutePath().toString();
@@ -228,8 +236,10 @@ public class BaselineFileMapper {
                                            ReportComparisonResult comparisonResult, ReportExecutionResult source, ReportExecutionResult target)
             throws IOException {
         //update data comparison
-        List<List<Object>> sourceData = DataConvertor.restToFileSystem(source.getReport());
-        List<List<Object>> targetData = DataConvertor.restToFileSystem(target.getReport());
+//        List<List<Object>> sourceData = DataConvertor.restToFileSystem(source.getReport());
+//        List<List<Object>> targetData = DataConvertor.restToFileSystem(target.getReport());
+        List<List<Object>> sourceData = source.getGridData();
+        List<List<Object>> targetData = target.getGridData();
         //ReportComparisonResult reportComparisonResult = comparisonResult.getReportComparisonResult();
         boolean[][] diff = comparisonResult.getDiff();
         this.updateDataDiff(jobId, objectId, key, sourceData, targetData, diff);
