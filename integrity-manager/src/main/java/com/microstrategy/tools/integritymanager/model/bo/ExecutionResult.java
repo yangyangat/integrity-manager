@@ -3,6 +3,7 @@ package com.microstrategy.tools.integritymanager.model.bo;
 import com.fasterxml.jackson.databind.JsonNode;
 import com.microstrategy.tools.integritymanager.constant.enums.EnumExecutableType;
 import com.microstrategy.tools.integritymanager.model.bo.intf.Query;
+import com.microstrategy.tools.integritymanager.model.entity.mstr.document.DocumentQueryDetails;
 import com.microstrategy.tools.integritymanager.model.entity.mstr.dossier.DossierDefinition;
 import com.microstrategy.tools.integritymanager.model.entity.mstr.report.ExecutionResultFormat;
 import com.microstrategy.tools.integritymanager.model.entity.mstr.report.ReportInstance;
@@ -27,7 +28,9 @@ public class ExecutionResult extends ExecutableInfo {
 
     private Map<String, ReportExecutionResult> mapOfVizResult;
 
-    private DossierDefinition hierarchyDefinition; // TODO, need to unify with Document hierarchy definition
+    private DossierDefinition hierarchyDefinition; // TODO, need to unify with Document hierarchy definition, "documentDefinition"
+
+    private DocumentQueryDetails documentDefinition;
 
     private String pdfInString;
 
@@ -44,6 +47,7 @@ public class ExecutionResult extends ExecutableInfo {
         this.reportExecutionResult = result.getReportExecutionResult();
         this.mapOfVizResult = result.getMapOfVizResult();
         this.hierarchyDefinition = result.getHierarchyDefinition();
+        this.documentDefinition = result.getDocumentDefinition();
         this.pdfInString = result.getPdfInString();
         this.excelInByte = result.getExcelInByte();
     }

@@ -36,6 +36,15 @@ public enum EnumViewMedia {
         return null;
     }
 
+    public static EnumViewMedia fromValue(int value) {
+        for (EnumViewMedia v : EnumViewMedia.values()) {
+            if (v.value == value) {
+                return v;
+            }
+        }
+        return null;
+    }
+
     public static boolean isDossier(EnumViewMedia viewMedia) {
         int type = viewMedia.getValue() & EnumViewMedia.DssViewMediaDefaultMask.getValue();
         return type == EnumViewMedia.DssViewMediaViewAnalysis.getValue()

@@ -1,15 +1,12 @@
 package com.microstrategy.tools.integritymanager.service.impl;
 
-import com.microstrategy.tools.integritymanager.executor.DossierExecutor;
+import com.microstrategy.tools.integritymanager.executor.*;
 import com.microstrategy.webapi.EnumDSSXMLObjectTypes;
 
 import com.microstrategy.tools.integritymanager.constant.enums.EnumViewMedia;
 import com.microstrategy.tools.integritymanager.exception.ReportExecutionException;
 import com.microstrategy.tools.integritymanager.exception.ReportExecutorInternalException;
-import com.microstrategy.tools.integritymanager.executor.ObjectInfoExecutor;
-import com.microstrategy.tools.integritymanager.executor.RestParams;
 import com.microstrategy.tools.integritymanager.model.entity.mstr.MSTRAuthToken;
-import com.microstrategy.tools.integritymanager.executor.ReportExecutor;
 import com.microstrategy.tools.integritymanager.model.entity.mstr.ObjectInfo;
 import com.microstrategy.tools.integritymanager.model.entity.mstr.report.ExecutionResultFormat;
 import com.microstrategy.tools.integritymanager.service.intf.ExecutionService;
@@ -48,7 +45,15 @@ public class ExecutionServiceImpl implements ExecutionService {
                 return dossierExecutor.execute(objectId, EnumSet.allOf(ExecutionResultFormat.class));
             }
             else {
-                //TODO, document execution
+                RestParams restParams = new RestParams()
+                        .setAuthToken(token.getToken())
+                        .setCookies(token.getCookies())
+                        .setLibraryUrl(libraryUrl)
+                        .setProjectId(projectId);
+                DocumentExecutor documentExecutor = DocumentExecutor.build().setRestParams(restParams);
+
+                //TODO, read the result formats from options. Now hardcoded to all.
+                return documentExecutor.execute(objectId, EnumSet.allOf(ExecutionResultFormat.class));
             }
         }
         return null;
